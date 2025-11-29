@@ -824,11 +824,11 @@ const overlayMaps = {
   "Strandposter": redningsnrLayer,
   "Falck Ass": falckAssLayer,
   "Kommunegrænser": kommunegrænserLayer,
-  "25 km grænse": border25Layer,
   "Rutenummereret vejnet": rutenummerLayer,
   // NYT: overlay til at beholde markører
   "Behold markører": keepMarkersLayer
 };
+
 // Tilføj vejrlag, hvis API-nøgle er sat
 // (Fjernet i Brand-versionen – vejrlag vises ikke)
 
