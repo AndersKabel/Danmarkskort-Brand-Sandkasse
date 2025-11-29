@@ -1533,31 +1533,130 @@ function describeBBRCode(dict, code) {
  * Hvis ingen data findes, vises en besked.
  */
 function renderBBRInfo(adgangsadresseId) {
-  const bbrBox = document.getElementById('bbrInfoBox');
+  const bbrBox = document.getElementById("bbrInfoBox");
   if (!bbrBox) return;
+
   // Vis loading og gør boksen synlig
-  bbrBox.innerHTML = 'Henter BBR-data...';
-  bbrBox.classList.remove('hidden');
-  bbrBox.style.display = 'block';
-  fetchBBRData(adgangsadresseId).then(data => {
-    if (!data || data.length === 0) {
-      bbrBox.innerHTML = '<p>Ingen BBR-data fundet.</p>';
-      return;
-    }
-    let html = '';
-    data.forEach((b, idx) => {
-      const summaryParts = [];
-      if (b.bygningsnr) summaryParts.push(`Bygningsnr: ${b.bygningsnr}`);
-      if (b.bygningsanvendelse && b.bygningsanvendelse.kode) summaryParts.push(`Anvendelse: ${b.bygningsanvendelse.kode}`);
-      if (b.opfoerelsesaar) summaryParts.push(`Opf.år: ${b.opfoerelsesaar}`);
-      const summary = summaryParts.join(', ') || `Bygning ${idx + 1}`;
-      html += `<details><summary>${summary}</summary><pre>${JSON.stringify(b, null, 2)}</pre></details>`;
+  bbrBox.innerHTML = "Henter BBR-data...";
+  bbrBox.classList.remove("hidden");
+  bbrBox.style.display = "block";
+
+  fetchBBRData(adgangsadresseId)
+    .then(data => {
+      if (!data || data.length === 0) {
+        bbrBox.innerHTML = "<p>Ingen BBR-data fundet.</p>";
+        return;
+      }
+
+      let html = "<h3>BBR – bygninger på adressen</h3>";
+
+      data.forEach((b, idx) => {
+        // Basisfelter
+        const bygningsnr =
+          getBBRValue(b, "bygningsnr", /bygningsnr|bygningsnummer/i);
+
+        const anvKode =
+          getBBRCode(b, "bygningsanvendelse", /anvendelse/i);
+        const anvTekst =
+          anvKode != null ? describeBBRCode(BBR_BYGNINGSANVENDELSE, anvKode) : null;
+
+        const opfoerAar =
+          getBBRValue(b, "opfoerelsesaar", /opfoerelsesaar/i);
+
+        const tagKode =
+          getBBRCode(b, "tagdaekningsmateriale", /tagdaekningsmateriale/i);
+        const tagTekst =
+          tagKode != null ? describeBBRCode(BBR_TAGDAEKNING, tagKode) : null;
+
+        const ydervKode =
+          getBBRCode(b, "ydervaegsmateriale", /ydervaegsmateriale/i);
+        const ydervTekst =
+          ydervKode != null ? describeBBRCode(BBR_YDERVAEG, ydervKode) : null;
+
+        const varmeKode =
+          getBBRCode(b, "varmeinstallation", /varmeinstallation/i);
+        const varmeTekst =
+          varmeKode != null ? describeBBRCode(BBR_VARMEINSTALLATION, varmeKode) : null;
+
+        const opvKode =
+          getBBRCode(b, "opvarmningsmiddel", /opvarmningsmiddel/i);
+        const opvTekst =
+          opvKode != null ? describeBBRCode(BBR_OPVARMNINGSMIDDEL, opvKode) : null;
+
+        const supVarmeKode =
+          getBBRCode(b, "supplerendeVarme", /supplerende.*varme/i);
+        const supVarmeTekst =
+          supVarmeKode != null ? describeBBRCode(BBR_SUPPLERENDE_VARME, supVarmeKode) : null;
+
+        // Overskrift for den enkelte bygning
+        const summaryTitleParts = [];
+        summaryTitleParts.push(`Bygning ${idx + 1}`);
+        if (anvTekst) {
+          summaryTitleParts.push(anvTekst);
+        }
+        if (opfoerAar) {
+          summaryTitleParts.push(`opf. ${opfoerAar}`);
+        }
+        const summaryTitle = summaryTitleParts.join(" – ");
+
+        // Detaljeret liste
+        let detailsHtml = "<ul>";
+        if (bygningsnr) {
+          detailsHtml += `<li><strong>Bygningsnr:</strong> ${bygningsnr}</li>`;
+        }
+        if (anvTekst) {
+          detailsHtml += `<li><strong>Anvendelse:</strong> ${anvTekst}</li>`;
+        } else if (anvKode != null) {
+          detailsHtml += `<li><strong>Anvendelse:</strong> Kode ${anvKode}</li>`;
+        }
+        if (opfoerAar) {
+          detailsHtml += `<li><strong>Opførelsesår:</strong> ${opfoerAar}</li>`;
+        }
+        if (tagTekst) {
+          detailsHtml += `<li><strong>Tagdækningsmateriale:</strong> ${tagTekst}</li>`;
+        } else if (tagKode != null) {
+          detailsHtml += `<li><strong>Tagdækningsmateriale:</strong> Kode ${tagKode}</li>`;
+        }
+        if (ydervTekst) {
+          detailsHtml += `<li><strong>Ydervægsmateriale:</strong> ${ydervTekst}</li>`;
+        } else if (ydervKode != null) {
+          detailsHtml += `<li><strong>Ydervægsmateriale:</strong> Kode ${ydervKode}</li>`;
+        }
+        if (varmeTekst) {
+          detailsHtml += `<li><strong>Varmeinstallation:</strong> ${varmeTekst}</li>`;
+        } else if (varmeKode != null) {
+          detailsHtml += `<li><strong>Varmeinstallation:</strong> Kode ${varmeKode}</li>`;
+        }
+        if (opvTekst) {
+          detailsHtml += `<li><strong>Opvarmningsmiddel:</strong> ${opvTekst}</li>`;
+        } else if (opvKode != null) {
+          detailsHtml += `<li><strong>Opvarmningsmiddel:</strong> Kode ${opvKode}</li>`;
+        }
+        if (supVarmeTekst) {
+          detailsHtml += `<li><strong>Supplerende varme:</strong> ${supVarmeTekst}</li>`;
+        } else if (supVarmeKode != null) {
+          detailsHtml += `<li><strong>Supplerende varme:</strong> Kode ${supVarmeKode}</li>`;
+        }
+        detailsHtml += "</ul>";
+
+        html += `
+          <details>
+            <summary>${summaryTitle}</summary>
+            ${detailsHtml}
+            <details>
+              <summary>Vis rå BBR-data</summary>
+              <pre>${JSON.stringify(b, null, 2)}</pre>
+            </details>
+          </details>
+        `;
+      });
+
+      bbrBox.innerHTML = html;
+    })
+    .catch(err => {
+      console.error("BBR render error:", err);
+      bbrBox.innerHTML = "<p>Fejl ved hentning af BBR-data.</p>";
     });
-    bbrBox.innerHTML = html;
-  }).catch(err => {
-    console.error('BBR render error:', err);
-    bbrBox.innerHTML = '<p>Fejl ved hentning af BBR-data.</p>';
-  });
 }
 
 /*
