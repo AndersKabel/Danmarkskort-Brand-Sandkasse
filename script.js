@@ -15,6 +15,8 @@ proj4.defs("EPSG:25832", "+proj=utm +zone=32 +ellps=GRS80 +datum=ETRS89 +units=m
 
 // Cloudflare proxy til VD-reference
 const VD_PROXY = "https://vd-proxy.anderskabel8.workers.dev";
+// Cloudflare proxy til BBR (bygning)
+const BBR_PROXY = "https://bbr-proxy.anderskabel8.workers.dev";
 
 /*
  * OpenRouteService integration
