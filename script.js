@@ -1309,6 +1309,224 @@ async function fetchBBRData(adgangsadresseId) {
     return null;
   }
 }
+// Opslagstabeller til BBR-koder (kilde: bbr.dk/kodelister)
+const BBR_TAGDAEKNING = {
+  1: "Tagpap med lille hældning",
+  2: "Tagpap med stor hældning",
+  3: "Fibercement herunder asbest",
+  4: "Betontagsten",
+  5: "Tegl",
+  6: "Metal",
+  7: "Stråtag",
+  10: "Fibercement uden asbest",
+  11: "Plastmaterialer",
+  12: "Glas",
+  20: "Levende tage",
+  90: "Andet materiale"
+};
+
+const BBR_YDERVAEG = {
+  1: "Mursten",
+  2: "Letbetonsten",
+  3: "Fibercement herunder asbest",
+  4: "Bindingsværk",
+  5: "Træ",
+  6: "Betonelementer",
+  8: "Metal",
+  10: "Fibercement uden asbest",
+  11: "Plastmaterialer",
+  12: "Glas",
+  80: "Ingen",
+  90: "Andet materiale"
+};
+
+const BBR_VARMEINSTALLATION = {
+  1: "Fjernvarme/blokvarme",
+  2: "Centralvarme med én fyringsenhed",
+  3: "Ovn til fast og flydende brændsel",
+  5: "Varmepumpe",
+  6: "Centralvarme med to fyringsenheder",
+  7: "Elvarme",
+  8: "Gasradiator",
+  9: "Ingen varmeinstallation",
+  99: "Blandet"
+};
+
+const BBR_OPVARMNINGSMIDDEL = {
+  1: "Elektricitet",
+  2: "Gasværksgas",
+  3: "Flydende brændsel",
+  4: "Fast brændsel",
+  6: "Halm",
+  7: "Naturgas",
+  9: "Andet"
+};
+
+const BBR_SUPPLERENDE_VARME = {
+  0: "Ikke oplyst",
+  1: "Varmepumpe",
+  2: "Brændeovne og lignende med skorsten",
+  3: "Biopejse og lignende uden skorsten",
+  4: "Solpaneler",
+  5: "Pejs",
+  6: "Gasradiator",
+  7: "Elvarme",
+  10: "Biogasanlæg",
+  80: "Andet",
+  90: "(Udfases) Ingen supplerende varme"
+};
+
+const BBR_BYGNINGSANVENDELSE = {
+  110: "Stuehus til landbrugsejendom",
+  120: "Fritliggende enfamiliehus",
+  121: "Sammenbygget enfamiliehus",
+  122: "Fritliggende enfamiliehus i tæt-lav bebyggelse",
+  130: "(Udfases) Række-, kæde- eller dobbelthus",
+  131: "Række-, kæde- og klyngehus",
+  132: "Dobbelthus",
+  140: "Etagebolig, flerfamilie- eller to-familiehus",
+  150: "Kollegium",
+  160: "Boligbygning til døgninstitution",
+  185: "Anneks til helårsbolig",
+  190: "Anden bygning til helårsbeboelse",
+  211: "Stald til svin",
+  212: "Stald til kvæg, får mv.",
+  213: "Stald til fjerkræ",
+  214: "Minkhal",
+  215: "Væksthus",
+  216: "Lade til foder, afgrøder mv.",
+  217: "Maskinhus, garage mv.",
+  218: "Lade til halm, hø mv.",
+  219: "Anden bygning til landbrug mv.",
+  221: "Bygning til industri med integreret produktionsapparat",
+  222: "Bygning til industri uden integreret produktionsapparat",
+  223: "Værksted",
+  229: "Anden bygning til produktion",
+  231: "Bygning til energiproduktion",
+  232: "Bygning til energidistribution",
+  233: "Bygning til vandforsyning",
+  234: "Bygning til håndtering af affald og spildevand",
+  239: "Anden bygning til energiproduktion og forsyning",
+  311: "Bygning til jernbane- og busdrift",
+  312: "Bygning til luftfart",
+  313: "Bygning til parkering- og transportanlæg",
+  314: "Bygning til parkering ved boliger",
+  315: "Havneanlæg",
+  319: "Andet transportanlæg",
+  321: "Bygning til kontor",
+  322: "Bygning til detailhandel",
+  323: "Bygning til lager",
+  324: "Butikscenter",
+  325: "Tankstation",
+  329: "Anden bygning til kontor, handel og lager",
+  331: "Hotel, kro eller konferencecenter med overnatning",
+  332: "Bed & breakfast mv.",
+  333: "Restaurant, café mv. uden overnatning",
+  334: "Privat servicevirksomhed",
+  339: "Anden bygning til serviceerhverv",
+  411: "Biograf, teater, koncertsted mv.",
+  412: "Museum",
+  413: "Bibliotek",
+  414: "Kirke eller anden bygning til trosudøvelse",
+  415: "Forsamlingshus",
+  416: "Forlystelsespark",
+  419: "Anden bygning til kulturelle formål",
+  421: "Grundskole",
+  422: "Universitet",
+  429: "Anden bygning til undervisning og forskning",
+  431: "Hospital og sygehus",
+  432: "Hospice, behandlingshjem mv.",
+  433: "Sundhedscenter, lægehus mv.",
+  439: "Anden bygning til sundhedsformål",
+  441: "Daginstitution",
+  442: "Servicefunktion på døgninstitution",
+  443: "Kaserne",
+  444: "Fængsel, arresthus mv.",
+  449: "Anden bygning til institutionsformål",
+  451: "Beskyttelsesrum",
+  510: "Sommerhus",
+  521: "Feriecenter eller campingplads",
+  522: "Bygning med ferielejligheder til udlejning",
+  523: "Bygning med ferielejligheder til eget brug",
+  529: "Anden bygning til ferieformål",
+  531: "Klubhus i forbindelse med idræt",
+  532: "Svømmehal",
+  533: "Idrætshal",
+  534: "Tribune ved stadion",
+  535: "Bygning til træning og opstaldning af heste",
+  539: "Anden bygning til idrætformål",
+  540: "Kolonihavehus",
+  585: "Anneks til fritids- eller sommerhus",
+  590: "Anden bygning til fritidsformål",
+  910: "Garage",
+  920: "Carport",
+  930: "Udhus",
+  940: "Drivhus",
+  950: "Fritliggende overdækning",
+  960: "Fritliggende udestue",
+  970: "Tiloversbleven landbrugsbygning",
+  990: "Faldefærdig bygning",
+  999: "Ukendt bygning"
+};
+
+// Hjælpere til at læse og beskrive BBR-koder
+function getBBRCode(obj, primaryKey, fallbackRegex) {
+  if (!obj) return null;
+
+  if (primaryKey && Object.prototype.hasOwnProperty.call(obj, primaryKey)) {
+    const value = obj[primaryKey];
+    if (value && typeof value === "object" && "kode" in value) {
+      return value.kode;
+    }
+    return value;
+  }
+
+  if (fallbackRegex) {
+    const regex = fallbackRegex;
+    for (const key in obj) {
+      if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+      if (regex.test(key)) {
+        const value = obj[key];
+        if (value && typeof value === "object" && "kode" in value) {
+          return value.kode;
+        }
+        return value;
+      }
+    }
+  }
+
+  return null;
+}
+
+function getBBRValue(obj, primaryKey, fallbackRegex) {
+  if (!obj) return null;
+
+  if (primaryKey && Object.prototype.hasOwnProperty.call(obj, primaryKey)) {
+    return obj[primaryKey];
+  }
+
+  if (fallbackRegex) {
+    const regex = fallbackRegex;
+    for (const key in obj) {
+      if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+      if (regex.test(key)) {
+        return obj[key];
+      }
+    }
+  }
+
+  return null;
+}
+
+function describeBBRCode(dict, code) {
+  if (code === null || code === undefined || code === "") return null;
+  const key = String(code);
+  const label = dict[key];
+  if (label) {
+    return `${label} (kode ${key})`;
+  }
+  return `Kode ${key}`;
+}
 
 /**
  * Render BBR-info i infoboksen. Viser et antal bygninger og detaljer i <details>-elementer.
