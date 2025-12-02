@@ -806,6 +806,7 @@ var chargeMapLayer = L.layerGroup();
 
 // NYT: lag til at samle ekstra markører, når "Behold markører" er slået til
 var keepMarkersLayer   = L.layerGroup();
+var bbrBuildingsLayer = L.layerGroup();
 var keepMarkersEnabled = false;
 
 // Global reference til "seneste" markør (bruges bl.a. til radius)
