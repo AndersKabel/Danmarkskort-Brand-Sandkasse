@@ -1229,38 +1229,38 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
     const polititekst = politikredsKode ? `${politikredsNavn || ""} (${politikredsKode})` : `${politikredsNavn}`;
     extraInfoEl.innerHTML += `<br><span style="font-size:16px;">Politikreds: ${polititekst}</span>`;
   }
+    // Hent og vis BBR-data for den valgte adresse
+    try {
+        // Vi vil konsekvent bruge adresse-id (enheds- eller husnummer-id) som BBR-id.
+        // 1) Enheds-adresse med eksplicit husnummer-id (fra /adresser/{id})
+        let bbrId = null;
 
-  // Hent og vis BBR-data for den valgte adresse
-  try {
-    let husnummerId = null;
+        if (data && (data.husnummerId || data.husnummerid)) {
+            bbrId = data.husnummerId || data.husnummerid;
+        }
+        // 2) Flade /adresser-strukturer med adgangsadresseid som husnummer-id
+        else if (data && (data.adgangsadresseid || data.adgangsadresseId)) {
+            bbrId = data.adgangsadresseid || data.adgangsadresseId;
+        }
+        // 3) Underliggende adgangsadresse-objekt har husnummer-id
+        else if (data && data.adgangsadresse && (data.adgangsadresse.husnummerId || data.adgangsadresse.husnummerid)) {
+            bbrId = data.adgangsadresse.husnummerId || data.adgangsadresse.husnummerid;
+        }
+        // 4) Underliggende adgangsadresse-objekt har id (klassisk DAR-adgangsadresse-id)
+        else if (data && data.adgangsadresse && data.adgangsadresse.id) {
+            bbrId = data.adgangsadresse.id;
+        }
+        // 5) Sidste fallback: data.id (fx reverse-kald hvor id er husnummer-id)
+        else if (data && data.id) {
+            bbrId = data.id;
+        }
 
-    // 1) Foretræk eksplicit husnummer-id (fx når vi har fået det direkte med fra enhedsadresse)
-    if (data && (data.husnummerId || data.husnummerid)) {
-      husnummerId = data.husnummerId || data.husnummerid;
+        if (bbrId) {
+            renderBBRInfo(bbrId);
+        }
+    } catch (err) {
+        console.warn("BBR-data kunne ikke hentes:", err);
     }
-    // 2) Ellers se om husnummer-id ligger under adgangsadresse-objektet
-    else if (data && data.adgangsadresse && (data.adgangsadresse.husnummerId || data.adgangsadresse.husnummerid)) {
-      husnummerId = data.adgangsadresse.husnummerId || data.adgangsadresse.husnummerid;
-    }
-    // 3) Ellers brug adgangsadresseid-felter fra flade strukturer (/adresser)
-    else if (data && (data.adgangsadresseid || data.adgangsadresseId)) {
-      husnummerId = data.adgangsadresseid || data.adgangsadresseId;
-    }
-    // 4) Ellers brug adgangsadresse.id (klassisk DAR-id)
-    else if (data && data.adgangsadresse && data.adgangsadresse.id) {
-      husnummerId = data.adgangsadresse.id;
-    }
-    // 5) Til sidst: for reverse-/adgangsadresser er data.id typisk husnummer-id
-    else if (data && data.id) {
-      husnummerId = data.id;
-    }
-
-    if (husnummerId) {
-      renderBBRInfo(husnummerId);
-    }
-  } catch (err) {
-    console.warn("BBR-data kunne ikke hentes:", err);
-  }
 }
 
 /*
