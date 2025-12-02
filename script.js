@@ -1256,9 +1256,10 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
             bbrId = data.id;
         }
 
-        if (bbrId) {
-            renderBBRInfo(bbrId);
+                if (bbrId) {
+            renderBBRInfo(bbrId, lat, lon);
         }
+
     } catch (err) {
         console.warn("BBR-data kunne ikke hentes:", err);
     }
