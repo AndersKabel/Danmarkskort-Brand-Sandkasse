@@ -1290,8 +1290,63 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
         else if (data && data.id) {
             bbrId = data.id;
         }
+        if (bbrId) {
+            // Datafordeler – hent SFE/BFE-oplysninger for adressen (DAR_BFE_Public)
+            try {
+                const infoBoxEl = document.getElementById("infoBox");
+                let bfeBox = document.getElementById("bfeInfoBox");
+                if (infoBoxEl && !bfeBox) {
+                    bfeBox = document.createElement("div");
+                    bfeBox.id = "bfeInfoBox";
+                    bfeBox.classList.add("info-section");
+                    infoBoxEl.appendChild(bfeBox);
+                }
+                if (bfeBox) {
+                    bfeBox.classList.remove("hidden");
+                    bfeBox.style.display = "block";
+                    bfeBox.innerHTML = "<h3>Samlet fast ejendom (Datafordeler)</h3><p>Henter data...</p>";
 
-                if (bbrId) {
+                    hentEjendomFraDatafordeler(data)
+                        .then(function (res) {
+                            if (!res || (!res.enhedBfe && !res.bygningsBfe)) {
+                                bfeBox.innerHTML = "<h3>Samlet fast ejendom (Datafordeler)</h3><p>Ingen data fundet.</p>";
+                                return;
+                            }
+
+                            bfeBox.innerHTML = "<h3>Samlet fast ejendom (Datafordeler)</h3>";
+
+                            if (res.enhedBfe) {
+                                const detailsEnhed = document.createElement("details");
+                                const summaryEnhed = document.createElement("summary");
+                                summaryEnhed.textContent = "Enheder (adresseTilEnhedBfe)";
+                                detailsEnhed.appendChild(summaryEnhed);
+                                const preEnhed = document.createElement("pre");
+                                preEnhed.textContent = JSON.stringify(res.enhedBfe, null, 2);
+                                detailsEnhed.appendChild(preEnhed);
+                                bfeBox.appendChild(detailsEnhed);
+                            }
+
+                            if (res.bygningsBfe) {
+                                const detailsByg = document.createElement("details");
+                                const summaryByg = document.createElement("summary");
+                                summaryByg.textContent = "Bygninger (husnummerTilBygningBfe)";
+                                detailsByg.appendChild(summaryByg);
+                                const preByg = document.createElement("pre");
+                                preByg.textContent = JSON.stringify(res.bygningsBfe, null, 2);
+                                detailsByg.appendChild(preByg);
+                                bfeBox.appendChild(detailsByg);
+                            }
+                        })
+                        .catch(function (err) {
+                            console.error("Fejl ved hentning af ejendomsoplysninger via Datafordeler:", err);
+                            bfeBox.innerHTML = "<h3>Samlet fast ejendom (Datafordeler)</h3><p>Fejl ved hentning af data.</p>";
+                        });
+                }
+            } catch (innerErr) {
+                console.error("Fejl ved opbygning af SFE/BFE-boks:", innerErr);
+            }
+
+            // Eksisterende BBR-bygninger via din proxy
             renderBBRInfo(bbrId, lat, lon);
         }
 
