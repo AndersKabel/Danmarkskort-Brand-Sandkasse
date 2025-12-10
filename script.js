@@ -1410,7 +1410,10 @@ async function fetchBBRData(bbrId) {
     }
 }
 /**
- * Hent ejendomsoplysninger (Samlet fast ejendom / BFE) via Datafordeler (DAR_BFE_Public).
+ * Hent ejendomsoplysninger (Samlet fast ejendom / BFE) via Cloudflare BBR-proxyen.
+ * Proxien kalder DAR_BFE_Public (adresseTilEnhedBfe / husnummerTilBygningBfe)
+ * med Datafordeler-login på serversiden, så der aldrig sendes credentials fra browseren.
+ *
  * - adresseTilEnhedBfe: kræver adresseId (enheds-adresse-id)
  * - husnummerTilBygningBfe: kræver husnummerid (husnummer/adgangsadresse-id)
  *
@@ -1423,12 +1426,6 @@ async function fetchBBRData(bbrId) {
  */
 async function hentEjendomFraDatafordeler(adresseData) {
   try {
-    // Hvis der ikke er sat Datafordeler-login, springes opslag helt over
-    if (!DATAFORDELER_USERNAME || !DATAFORDELER_PASSWORD) {
-      console.warn("Datafordeler-brugernavn/kodeord er ikke sat – springer ejendomsopslag over.");
-      return null;
-    }
-
     if (!adresseData || typeof adresseData !== "object") {
       return null;
     }
@@ -1458,19 +1455,15 @@ async function hentEjendomFraDatafordeler(adresseData) {
 
     const promises = [];
 
-    // Enheds-BFE via adresseId
+    // Enheds-BFE via adresseId (via BBR_PROXY)
     if (adresseId) {
-      const baseUrlAdresse = "https://services.datafordeler.dk/DAR/DAR_BFE_Public/1/rest/adresseTilEnhedBfe";
-      const urlAdresse = buildDatafordelerUrl(baseUrlAdresse, {
-        adresseId: adresseId,
-        format: "json"
-      });
+      const urlAdresse = `${BBR_PROXY}/adresseTilEnhedBfe?adresseId=${encodeURIComponent(adresseId)}`;
 
       promises.push(
         fetch(urlAdresse)
           .then(function(resp) {
             if (!resp.ok) {
-              throw new Error("adresseTilEnhedBfe-fejl: " + resp.status + " " + resp.statusText);
+              throw new Error("adresseTilEnhedBfe-proxy-fejl: " + resp.status + " " + resp.statusText);
             }
             return resp.json();
           })
@@ -1478,24 +1471,20 @@ async function hentEjendomFraDatafordeler(adresseData) {
             result.enhedBfe = json;
           })
           .catch(function(err) {
-            console.error("Fejl i adresseTilEnhedBfe:", err);
+            console.error("Fejl i adresseTilEnhedBfe via proxy:", err);
           })
       );
     }
 
-    // Bygnings-BFE via husnummerId
+    // Bygnings-BFE via husnummerId (via BBR_PROXY)
     if (husnummerId) {
-      const baseUrlHusnr = "https://services.datafordeler.dk/DAR/DAR_BFE_Public/1/rest/husnummerTilBygningBfe";
-      const urlHusnr = buildDatafordelerUrl(baseUrlHusnr, {
-        husnummerid: husnummerId,
-        format: "json"
-      });
+      const urlHusnr = `${BBR_PROXY}/husnummerTilBygningBfe?husnummerid=${encodeURIComponent(husnummerId)}`;
 
       promises.push(
         fetch(urlHusnr)
           .then(function(resp) {
             if (!resp.ok) {
-              throw new Error("husnummerTilBygningBfe-fejl: " + resp.status + " " + resp.statusText);
+              throw new Error("husnummerTilBygningBfe-proxy-fejl: " + resp.status + " " + resp.statusText);
             }
             return resp.json();
           })
@@ -1503,7 +1492,7 @@ async function hentEjendomFraDatafordeler(adresseData) {
             result.bygningsBfe = json;
           })
           .catch(function(err) {
-            console.error("Fejl i husnummerTilBygningBfe:", err);
+            console.error("Fejl i husnummerTilBygningBfe via proxy:", err);
           })
       );
     }
