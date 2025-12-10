@@ -3141,10 +3141,14 @@ infoCloseBtn.addEventListener("click", function() {
   resultsList.style.display = "none";
   document.getElementById("kommuneOverlay").style.display = "none";
 
-  // Skjul også BBR-infoboksen når infoboksen lukkes
+    // Skjul også BBR- og SFE/BFE-infobokse når infoboksen lukkes
   const bbrBox = document.getElementById("bbrInfoBox");
   if (bbrBox) {
     bbrBox.classList.add("hidden");
+  }
+  const bfeBox = document.getElementById("bfeInfoBox");
+  if (bfeBox) {
+    bfeBox.classList.add("hidden");
   }
 });
 
