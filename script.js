@@ -1322,6 +1322,41 @@ function updateInfoBoxForeign(feature, lat, lon) {
  * Hent BBR-data for en adgangsadresse (bygninger) ved hjælp af bbrlight API.
  * Returnerer en liste af bygninger eller null ved fejl.
  */
+/*
+ * Forsøg at finde et BFE-nummer i adresse-objektet
+ * (både direkte på data og på data.adgangsadresse).
+ */
+function extractBfeNumberFromAdresse(data) {
+  if (!data || typeof data !== "object") return null;
+
+  function search(obj) {
+    if (!obj || typeof obj !== "object") return null;
+    for (const key in obj) {
+      if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+      // Fang fx "bfenummer", "BfeNummer" etc.
+      if (/bfe.*nummer/i.test(key)) {
+        const val = obj[key];
+        if (val === null || val === undefined) return null;
+        if (typeof val === "object" && "kode" in val) {
+          return val.kode;
+        }
+        return val;
+      }
+    }
+    return null;
+  }
+
+  const direct = search(data);
+  if (direct != null) return direct;
+
+  if (data.adgangsadresse) {
+    const nested = search(data.adgangsadresse);
+    if (nested != null) return nested;
+  }
+
+  return null;
+}
+
 /**
  * Hent BBR-data for en adgangsadresse (bygninger) via Cloudflare BBR-proxyen.
  * Returnerer en liste af bygninger eller null ved fejl.
