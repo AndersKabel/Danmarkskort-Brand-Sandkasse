@@ -2009,10 +2009,7 @@ searchInput.addEventListener("keydown", function(e) {
     if (searchCurrentIndex >= 0) {
       searchItems[searchCurrentIndex].click();
     }
-  } else if (e.key === "Backspace") {
-    // Når feltet bliver tømt med backspace, skal resultatliste, markør og infobokse væk
-    const currentLength = searchInput.value.length; // længde før tegnet slettes
-    if (currentLength <= 1) {
+      if (currentLength <= 1) {
       resultsList.innerHTML = "";
       resultsList.style.display = "none";
       searchItems = [];
@@ -2023,13 +2020,13 @@ searchInput.addEventListener("keydown", function(e) {
       document.getElementById("kommuneOverlay").style.display = "none";
       resetCoordinateBox();
 
+      hideBBRInfo();
+
       if (!keepMarkersEnabled && currentMarker) {
         map.removeLayer(currentMarker);
         currentMarker = null;
       }
     }
-  }
-});
 
 function highlightSearchItem() {
   searchItems.forEach(li => li.classList.remove("highlight"));
