@@ -1308,12 +1308,8 @@ function updateInfoBoxForeign(feature, lat, lon) {
   overlay.style.display       = "none";
   statsvejInfoEl.innerHTML    = "";
   statsvejBox.style.display   = "none";
-
   // Skjul BBR-boksen for udenlandske adresser
-  const bbrBox = document.getElementById("bbrInfoBox");
-  if (bbrBox) {
-    bbrBox.classList.add("hidden");
-  }
+  hideBBRInfo();
 
   document.getElementById("infoBox").style.display = "block";
 
