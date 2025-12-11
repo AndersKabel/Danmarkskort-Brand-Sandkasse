@@ -2009,7 +2009,10 @@ searchInput.addEventListener("keydown", function(e) {
     if (searchCurrentIndex >= 0) {
       searchItems[searchCurrentIndex].click();
     }
-      if (currentLength <= 1) {
+  } else if (e.key === "Backspace") {
+    // Når feltet bliver tømt med backspace, skal resultatliste, markør, BBR og infobokse væk
+    const currentLength = searchInput.value.length; // længde før tegnet slettes
+    if (currentLength <= 1) {
       resultsList.innerHTML = "";
       resultsList.style.display = "none";
       searchItems = [];
@@ -2027,6 +2030,8 @@ searchInput.addEventListener("keydown", function(e) {
         currentMarker = null;
       }
     }
+  }
+});
 
 function highlightSearchItem() {
   searchItems.forEach(li => li.classList.remove("highlight"));
