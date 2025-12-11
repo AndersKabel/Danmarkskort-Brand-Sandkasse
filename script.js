@@ -1655,7 +1655,7 @@ function hideBBRInfo() {
  * Render BBR-info i infoboksen. Viser et antal bygninger og detaljer i <details>-elementer.
  * Hvis ingen data findes, vises en besked.
  */
-function renderBBRInfo(bbrId, fallbackLat, fallbackLon) {
+function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
   const bbrBox = document.getElementById("bbrInfoBox");
   if (!bbrBox) return;
 
@@ -1672,7 +1672,7 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon) {
   bbrBox.classList.remove("hidden");
   bbrBox.style.display = "block";
 
-  fetchBBRData(bbrId)
+  fetchBBRData(bbrId, bfeNumber)
     .then(data => {
       // Ingen data
       if (!data || data.length === 0) {
