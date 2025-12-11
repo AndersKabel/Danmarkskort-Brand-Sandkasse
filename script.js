@@ -1361,29 +1361,54 @@ function extractBfeNumberFromAdresse(data) {
  * Hent BBR-data for en adgangsadresse (bygninger) via Cloudflare BBR-proxyen.
  * Returnerer en liste af bygninger eller null ved fejl.
  */
-async function fetchBBRData(bbrId) {
-    try {
-        if (!bbrId) {
-            console.warn("fetchBBRData kaldt uden bbrId/husnummerId");
-            return null;
-        }
+/**
+ * Hent BBR-data for en adresse (bygninger) via Cloudflare BBR-proxyen.
+ * Vi prøver først med BFE-nummer (hvis tilgængeligt) og falder derefter
+ * tilbage til husnummer-id (DAR husnummer/adgangsadresse).
+ */
+async function fetchBBRData(bbrId, bfeNumber) {
+  try {
+    if (!bbrId && !bfeNumber) {
+      console.warn("fetchBBRData kaldt uden husnummerId eller BFE-nummer");
+      return [];
+    }
 
-        // Hent BBR-bygninger via Cloudflare-worker, så Datafordeler-login ikke ligger i browseren.
-        // Workeren forventer nu ?husnummer=<bbrId> (DAR husnummer-id / adgangsadresse-id)
-        // og sørger selv for username/password, format og status.
-        const url = `${BBR_PROXY}/bygning?husnummer=${encodeURIComponent(bbrId)}`;
+    const urls = [];
 
+    // 1) Prøv BFE-nummer først, hvis vi har et
+    if (bfeNumber) {
+      urls.push(`${BBR_PROXY}/bygning?bfenummer=${encodeURIComponent(bfeNumber)}`);
+    }
+
+    // 2) Fald tilbage til husnummer-id
+    if (bbrId) {
+      urls.push(`${BBR_PROXY}/bygning?husnummer=${encodeURIComponent(bbrId)}`);
+    }
+
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      try {
         const resp = await fetch(url);
         if (!resp.ok) {
-            throw new Error("BBR 2.1 proxy-fejl: " + resp.status);
+          console.warn("BBR 2.1 proxy-fejl for URL", url, resp.status);
+          continue;
         }
 
         const data = await resp.json();
-        return data;
-    } catch (e) {
-        console.error("BBR fetch error via proxy:", e);
-        return null;
+        if (Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      } catch (innerErr) {
+        console.warn("BBR fetch-fejl for URL", url, innerErr);
+      }
     }
+
+    // Hvis ingen af opslagene gav noget, returner tom liste
+    return [];
+  } catch (e) {
+    console.error("BBR fetch error via proxy:", e);
+    return [];
+  }
 }
 
 // Opslagstabeller til BBR-koder (kilde: bbr.dk/kodelister)
