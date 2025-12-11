@@ -2929,27 +2929,27 @@ statsvejCloseBtn.addEventListener("click", function() {
     currentMarker = null;
   }
 });
+
 const infoCloseBtn = document.getElementById("infoCloseBtn");
 infoCloseBtn.addEventListener("click", function() {
   document.getElementById("infoBox").style.display = "none";
   document.getElementById("statsvejInfoBox").style.display = "none";
+
   if (!keepMarkersEnabled && currentMarker) {
     map.removeLayer(currentMarker);
     currentMarker = null;
   }
+
   resetCoordinateBox();
+
   resultsList.innerHTML = "";
   resultsList.style.display = "none";
   document.getElementById("kommuneOverlay").style.display = "none";
 
-    // Skjul også BBR- og SFE/BFE-infobokse når infoboksen lukkes
+  // Skjul også BBR-infoboksen når infoboksen lukkes
   const bbrBox = document.getElementById("bbrInfoBox");
   if (bbrBox) {
     bbrBox.classList.add("hidden");
-  }
-  const bfeBox = document.getElementById("bfeInfoBox");
-  if (bfeBox) {
-    bfeBox.classList.add("hidden");
   }
 });
 
