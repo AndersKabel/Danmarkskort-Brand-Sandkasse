@@ -2963,6 +2963,7 @@ const statsvejCloseBtn = document.getElementById("statsvejCloseBtn");
 statsvejCloseBtn.addEventListener("click", function() {
   statsvejInfoBox.style.display = "none";
   document.getElementById("infoBox").style.display = "none";
+  hideBBRInfo();
   resetCoordinateBox();
   if (!keepMarkersEnabled && currentMarker) {
     map.removeLayer(currentMarker);
