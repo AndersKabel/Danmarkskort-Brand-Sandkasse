@@ -1061,9 +1061,6 @@ map.on('click', function(e) {
 
 /*
  * updateInfoBox for danske adresser
- */
-/*
- * updateInfoBox for danske adresser
  *  - data: objekt fra Dataforsyningen (adgangsadresse eller adresse)
  *  - lat/lon: koordinater i WGS84
  *  - enhedsLabel (valgfri): fuld enhedsadresse inkl. etage/dør til visning
@@ -1074,15 +1071,15 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
   const extraInfoEl    = document.getElementById("extra-info");
   const skråfotoLink   = document.getElementById("skraafotoLink");
   const overlay        = document.getElementById("kommuneOverlay");
-  
+
   let adresseStr, vejkode, kommunekode;
   let evaFormat, notesFormat;
-  
+
   // Byg grund-adresse (uden etage/dør) ud fra data
   if (data.adgangsadresse) {
     // Typisk når data kommer fra /adresser eller /adgangsadresser
-    adresseStr = data.adgangsadresse.adressebetegnelse || 
-                 `${data.adgangsadresse.vejnavn || ""} ${data.adgangsadresse.husnr || ""}, ${data.adgangsadresse.postnr || ""} ${data.adgangsadresse.postnrnavn || ""}`;
+    adresseStr = data.adgangsadresse.adressebetegnelse ||
+      `${data.adgangsadresse.vejnavn || ""} ${data.adgangsadresse.husnr || ""}, ${data.adgangsadresse.postnr || ""} ${data.adgangsadresse.postnrnavn || ""}`;
     evaFormat   = `${data.adgangsadresse.vejnavn || ""},${data.adgangsadresse.husnr || ""},${data.adgangsadresse.postnr || ""}`;
     notesFormat = `${data.adgangsadresse.vejnavn || ""} ${data.adgangsadresse.husnr || ""}, ${data.adgangsadresse.postnr || ""} ${data.adgangsadresse.postnrnavn || ""}`;
     vejkode     = data.adgangsadresse.vejkode || "?";
@@ -1108,10 +1105,12 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
     (typeof enhedsLabel === "string" && enhedsLabel.trim().length > 0)
       ? enhedsLabel
       : adresseStr;
-  
-  streetviewLink.href = `https://www.google.com/maps?q=&layer=c&cbll=${lat},${lon}`;
+
+  // Street View-link og adressefelt
+  streetviewLink.href   = `https://www.google.com/maps?q=&layer=c&cbll=${lat},${lon}`;
   addressEl.textContent = displayAddress;
 
+  // Eva.Net-link
   extraInfoEl.innerHTML = "";
   extraInfoEl.insertAdjacentHTML(
     "beforeend",
@@ -1119,7 +1118,8 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
     <a href="#" title="Kopier til Eva.net" onclick="(function(el){ el.style.color='red'; copyToClipboard('${evaFormat}'); showCopyPopup('Kopieret'); setTimeout(function(){ el.style.color=''; },1000); })(this); return false;">Eva.Net</a>
     `
   );
-  
+
+  // Skråfoto-link + popup
   skråfotoLink.href = `https://skraafoto.dataforsyningen.dk/?search=${encodeURIComponent(adresseStr)}`;
   skråfotoLink.style.display = "inline";
   skråfotoLink.onclick = function(e) {
@@ -1143,16 +1143,18 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
     }, 1000);
   };
 
+  // Overlay med kommune- og vejkode
   overlay.textContent = `Kommunekode: ${kommunekode} | Vejkode: ${vejkode}`;
   overlay.style.display = "block";
 
+  // Ryd søgeresultater
   if (resultsList) resultsList.innerHTML = "";
   if (vej1List)    vej1List.innerHTML    = "";
   if (vej2List)    vej2List.innerHTML    = "";
 
-  // Statsvej-data
-  let statsvejData = await checkForStatsvej(lat, lon);
+  // ----- Statsvej-data -----
   const statsvejInfoEl = document.getElementById("statsvejInfo");
+  let statsvejData = await checkForStatsvej(lat, lon);
 
   const admNr       = statsvejData?.ADM_NR       ?? statsvejData?.adm_nr       ?? null;
   const forgrening  = statsvejData?.FORGRENING   ?? statsvejData?.forgrening   ?? null;
@@ -1162,8 +1164,10 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
   const beskrivelse = statsvejData?.BESKRIVELSE  ?? statsvejData?.beskrivelse  ?? null;
   const vejstatus   = statsvejData?.VEJSTATUS    ?? statsvejData?.vejstatus    ?? statsvejData?.VEJ_STATUS ?? statsvejData?.status ?? null;
   const vejmynd     = statsvejData?.VEJMYNDIGHED ?? statsvejData?.vejmyndighed ?? statsvejData?.VEJMYND     ?? statsvejData?.vejmynd ?? null;
-  
-  const hasStatsvej = admNr != null || forgrening != null || (betegnelse && String(betegnelse).trim() !== "") || (vejtype && String(vejtype).trim() !== "");
+
+  const hasStatsvej = admNr != null || forgrening != null ||
+    (betegnelse && String(betegnelse).trim() !== "") ||
+    (vejtype && String(vejtype).trim() !== "");
   const showStatsBox = hasStatsvej || vejstatus || vejmynd;
 
   if (showStatsBox) {
@@ -1175,7 +1179,6 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
       html += `<strong>Bestyrer:</strong> ${bestyrer || "Ukendt"}<br>`;
       html += `<strong>Vejtype:</strong> ${vejtype || "Ukendt"}`;
     }
-
     if (vejstatus) {
       html += `<br><strong>Vejstatus:</strong> ${vejstatus}`;
     }
@@ -1195,20 +1198,21 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
     statsvejInfoEl.innerHTML = "";
     document.getElementById("statsvejInfoBox").style.display = "none";
   }
+
+  // Vis infoboksen
   document.getElementById("infoBox").style.display = "block";
-  
-  // Kommuneinfo
+
+  // ----- Kommuneinfo (fra kommuneInfo) -----
   if (kommunekode !== "?") {
     try {
-      let komUrl = `https://api.dataforsyningen.dk/kommuner/${kommunekode}`;
-      let komResp = await fetch(komUrl);
+      const komUrl = `https://api.dataforsyningen.dk/kommuner/${kommunekode}`;
+      const komResp = await fetch(komUrl);
       if (komResp.ok) {
-        let komData = await komResp.json();
-        let kommunenavn = komData.navn || "";
+        const komData = await komResp.json();
+        const kommunenavn = komData.navn || "";
         if (kommunenavn && kommuneInfo[kommunenavn]) {
-          let info      = kommuneInfo[kommunenavn];
-          let link      = info.gemLink;
-          // Vis kun kommunenavnet (uden "Døde dyr" og "Gader og veje")
+          const info = kommuneInfo[kommunenavn];
+          const link = info.gemLink;
           if (link) {
             extraInfoEl.innerHTML += `<br><span style="font-size:16px;">Kommune: <a href="${link}" target="_blank">${kommunenavn}</a></span>`;
           } else {
@@ -1220,7 +1224,8 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
       console.error("Kunne ikke hente kommuneinfo:", e);
     }
   }
-  
+
+  // ----- Politikreds-info (hvis tilgængelig) -----
   const politikredsNavn = data.politikredsnavn
     ?? data.adgangsadresse?.politikredsnavn
     ?? null;
@@ -1228,97 +1233,43 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
     ?? data.adgangsadresse?.politikredskode
     ?? null;
   if (politikredsNavn || politikredsKode) {
-    const polititekst = politikredsKode ? `${politikredsNavn || ""} (${politikredsKode})` : `${politikredsNavn}`;
+    const polititekst = politikredsKode
+      ? `${politikredsNavn || ""} (${politikredsKode})`
+      : `${politikredsNavn}`;
     extraInfoEl.innerHTML += `<br><span style="font-size:16px;">Politikreds: ${polititekst}</span>`;
   }
-    // Hent og vis BBR-data for den valgte adresse
-    try {
-        // Vi vil konsekvent bruge adresse-id (enheds- eller husnummer-id) som BBR-id.
-        // 1) Enheds-adresse med eksplicit husnummer-id (fra /adresser/{id})
-        let bbrId = null;
 
-        if (data && (data.husnummerId || data.husnummerid)) {
-            bbrId = data.husnummerId || data.husnummerid;
-        }
-        // 2) Flade /adresser-strukturer med adgangsadresseid som husnummer-id
-        else if (data && (data.adgangsadresseid || data.adgangsadresseId)) {
-            bbrId = data.adgangsadresseid || data.adgangsadresseId;
-        }
-        // 3) Underliggende adgangsadresse-objekt har husnummer-id
-        else if (data && data.adgangsadresse && (data.adgangsadresse.husnummerId || data.adgangsadresse.husnummerid)) {
-            bbrId = data.adgangsadresse.husnummerId || data.adgangsadresse.husnummerid;
-        }
-        // 4) Underliggende adgangsadresse-objekt har id (klassisk DAR-adgangsadresse-id)
-        else if (data && data.adgangsadresse && data.adgangsadresse.id) {
-            bbrId = data.adgangsadresse.id;
-        }
-        // 5) Sidste fallback: data.id (fx reverse-kald hvor id er husnummer-id)
-        else if (data && data.id) {
-            bbrId = data.id;
-        }
-        if (bbrId) {
-            // Datafordeler – hent SFE/BFE-oplysninger for adressen (DAR_BFE_Public)
-            try {
-                const infoBoxEl = document.getElementById("infoBox");
-                let bfeBox = document.getElementById("bfeInfoBox");
-                if (infoBoxEl && !bfeBox) {
-                    bfeBox = document.createElement("div");
-                    bfeBox.id = "bfeInfoBox";
-                    bfeBox.classList.add("info-section");
-                    infoBoxEl.appendChild(bfeBox);
-                }
-                if (bfeBox) {
-                    bfeBox.classList.remove("hidden");
-                    bfeBox.style.display = "block";
-                    bfeBox.innerHTML = "<h3>Samlet fast ejendom (Datafordeler)</h3><p>Henter data...</p>";
+  // ----- BBR-data (bygninger) – SFE/BFE er fjernet -----
+  try {
+    let bbrId = null;
 
-                    hentEjendomFraDatafordeler(data)
-                        .then(function (res) {
-                            if (!res || (!res.enhedBfe && !res.bygningsBfe)) {
-                                bfeBox.innerHTML = "<h3>Samlet fast ejendom (Datafordeler)</h3><p>Ingen data fundet.</p>";
-                                return;
-                            }
-
-                            bfeBox.innerHTML = "<h3>Samlet fast ejendom (Datafordeler)</h3>";
-
-                            if (res.enhedBfe) {
-                                const detailsEnhed = document.createElement("details");
-                                const summaryEnhed = document.createElement("summary");
-                                summaryEnhed.textContent = "Enheder (adresseTilEnhedBfe)";
-                                detailsEnhed.appendChild(summaryEnhed);
-                                const preEnhed = document.createElement("pre");
-                                preEnhed.textContent = JSON.stringify(res.enhedBfe, null, 2);
-                                detailsEnhed.appendChild(preEnhed);
-                                bfeBox.appendChild(detailsEnhed);
-                            }
-
-                            if (res.bygningsBfe) {
-                                const detailsByg = document.createElement("details");
-                                const summaryByg = document.createElement("summary");
-                                summaryByg.textContent = "Bygninger (husnummerTilBygningBfe)";
-                                detailsByg.appendChild(summaryByg);
-                                const preByg = document.createElement("pre");
-                                preByg.textContent = JSON.stringify(res.bygningsBfe, null, 2);
-                                detailsByg.appendChild(preByg);
-                                bfeBox.appendChild(detailsByg);
-                            }
-                        })
-                        .catch(function (err) {
-                            console.error("Fejl ved hentning af ejendomsoplysninger via Datafordeler:", err);
-                            bfeBox.innerHTML = "<h3>Samlet fast ejendom (Datafordeler)</h3><p>Fejl ved hentning af data.</p>";
-                        });
-                }
-            } catch (innerErr) {
-                console.error("Fejl ved opbygning af SFE/BFE-boks:", innerErr);
-            }
-
-            // Eksisterende BBR-bygninger via din proxy
-            renderBBRInfo(bbrId, lat, lon);
-        }
-
-    } catch (err) {
-        console.warn("BBR-data kunne ikke hentes:", err);
+    if (data && (data.husnummerId || data.husnummerid)) {
+      bbrId = data.husnummerId || data.husnummerid;
+    } else if (data && (data.adgangsadresseid || data.adgangsadresseId)) {
+      bbrId = data.adgangsadresseid || data.adgangsadresseId;
+    } else if (data && data.adgangsadresse &&
+      (data.adgangsadresse.husnummerId || data.adgangsadresse.husnummerid)) {
+      bbrId = data.adgangsadresse.husnummerId || data.adgangsadresse.husnummerid;
+    } else if (data && data.adgangsadresse && data.adgangsadresse.id) {
+      bbrId = data.adgangsadresse.id;
+    } else if (data && data.id) {
+      bbrId = data.id;
     }
+
+    if (bbrId) {
+      // Videresend til eksisterende BBR-visningsfunktion
+      renderBBRInfo(bbrId, lat, lon);
+    } else {
+      const bbrBox = document.getElementById("bbrInfoBox");
+      if (bbrBox) {
+        bbrBox.innerHTML = "<p>Ingen BBR-id tilgængelig for denne adresse.</p>";
+        bbrBox.classList.remove("hidden");
+        bbrBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    console.warn("BBR-data kunne ikke hentes:", err);
+  }
 }
 
 /*
