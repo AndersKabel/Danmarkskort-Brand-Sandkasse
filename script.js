@@ -1239,7 +1239,7 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
     extraInfoEl.innerHTML += `<br><span style="font-size:16px;">Politikreds: ${polititekst}</span>`;
   }
 
-  // ----- BBR-data (bygninger) – SFE/BFE er fjernet -----
+    // ----- BBR-data (bygninger) – bruger husnummerId og evt. BFE-nummer -----
   try {
     let bbrId = null;
 
@@ -1256,9 +1256,12 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
       bbrId = data.id;
     }
 
-    if (bbrId) {
-      // Videresend til eksisterende BBR-visningsfunktion
-      renderBBRInfo(bbrId, lat, lon);
+    // NYT: forsøg også at finde et BFE-nummer i adresse-objektet
+    const bfeNumber = extractBfeNumberFromAdresse(data);
+
+    if (bbrId || bfeNumber) {
+      // Videresend til BBR-visningsfunktionen med både husnummer-id og BFE
+      renderBBRInfo(bbrId, lat, lon, bfeNumber);
     } else {
       const bbrBox = document.getElementById("bbrInfoBox");
       if (bbrBox) {
