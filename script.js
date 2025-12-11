@@ -1573,6 +1573,24 @@ function describeBBRCode(dict, code) {
   }
   return `Kode ${key}`;
 }
+/*
+ * Hjælper: skjul BBR-boksen og ryd BBR-markører
+ */
+function hideBBRInfo() {
+  const bbrBox = document.getElementById("bbrInfoBox");
+  if (bbrBox) {
+    bbrBox.innerHTML = "";
+    bbrBox.classList.add("hidden");
+    bbrBox.style.display = "none";
+  }
+
+  if (bbrBuildingsLayer) {
+    bbrBuildingsLayer.clearLayers();
+    if (map.hasLayer(bbrBuildingsLayer)) {
+      map.removeLayer(bbrBuildingsLayer);
+    }
+  }
+}
 
 /**
  * Render BBR-info i infoboksen. Viser et antal bygninger og detaljer i <details>-elementer.
