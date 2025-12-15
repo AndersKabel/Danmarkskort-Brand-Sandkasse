@@ -1414,6 +1414,108 @@ async function fetchBBRData(bbrId, bfeNumber) {
   }
 }
 
+// Hjælpefunktion: find første felt i et objekt (og evt. underobjekter), hvor nøglen matcher et regex.
+function findFirstMatchingField(obj, regex) {
+  if (!obj || typeof obj !== "object") return null;
+
+  for (const key in obj) {
+    if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+
+    const value = obj[key];
+
+    if (regex.test(key)) {
+      if (value && typeof value === "object") {
+        if (Object.prototype.hasOwnProperty.call(value, "tekst")) {
+          return value.tekst;
+        }
+        if (Object.prototype.hasOwnProperty.call(value, "navn")) {
+          return value.navn;
+        }
+        if (Object.prototype.hasOwnProperty.call(value, "kode")) {
+          return value.kode;
+        }
+      }
+      return value;
+    }
+
+    if (value && typeof value === "object") {
+      const nested = findFirstMatchingField(value, regex);
+      if (nested != null) {
+        return nested;
+      }
+    }
+  }
+
+  return null;
+}
+
+// Hjælpefunktion: saml alle relevante BFE-numre fra BBR-bygninger + evt. et direkte bfeNumber.
+function collectBfeNumbersFromBuildings(buildings, fallbackBfeNumber) {
+  const result = new Set();
+
+  if (fallbackBfeNumber != null && fallbackBfeNumber !== "") {
+    result.add(String(fallbackBfeNumber));
+  }
+
+  if (Array.isArray(buildings)) {
+    buildings.forEach(b => {
+      const building = (b && b.bygning) ? b.bygning : b;
+      if (!building || typeof building !== "object") return;
+
+      const bfeVal = findFirstMatchingField(building, /bfe.*nummer/i);
+      if (bfeVal != null && bfeVal !== "") {
+        result.add(String(bfeVal));
+      }
+    });
+  }
+
+  return Array.from(result);
+}
+
+// Hjælpefunktion: hent Ejendomsbeliggenhed-data for et eller flere BFE-numre via proxien.
+async function fetchEjendomsbeliggenhedForBFE(bfeNumbers) {
+  try {
+    const list = Array.isArray(bfeNumbers) ? bfeNumbers : [bfeNumbers];
+    const cleaned = list
+      .map(v => (v != null ? String(v).trim() : ""))
+      .filter(v => v !== "");
+
+    if (cleaned.length === 0) {
+      return [];
+    }
+
+    const bfeParam = cleaned.join("|");
+    const url = `${BBR_PROXY}/Ejendomsbeliggenhed2?bfenr=${encodeURIComponent(bfeParam)}`;
+
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      console.warn("Ejendomsbeliggenhed proxy-fejl:", resp.status, resp.statusText);
+      return [];
+    }
+
+    const data = await resp.json();
+
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (data && Array.isArray(data.results)) {
+      return data.results;
+    }
+
+    if (data && data.ejendomsbeliggenhed) {
+      return Array.isArray(data.ejendomsbeliggenhed)
+        ? data.ejendomsbeliggenhed
+        : [data.ejendomsbeliggenhed];
+    }
+
+    return [data];
+  } catch (err) {
+    console.error("Fejl i fetchEjendomsbeliggenhedForBFE:", err);
+    return [];
+  }
+}
+
 // Opslagstabeller til BBR-koder (kilde: bbr.dk/kodelister)
 const BBR_TAGDAEKNING = {
   1: "Tagpap med lille hældning",
