@@ -1355,8 +1355,8 @@ function extractBfeNumberFromAdresse(data) {
  */
 /**
  * Hent BBR-data for en adresse (bygninger) via Cloudflare BBR-proxyen.
- * Vi prøver først med BFE-nummer (hvis tilgængeligt) og falder derefter
- * tilbage til husnummer-id (DAR husnummer/adgangsadresse).
+ * Vi prøver først med husnummer-id (adgangsadresse-ID) og falder derefter
+ * tilbage til BFE-nummer (ejendomsnummer) hvis ingen bygning findes via husnummer.
  */
 async function fetchBBRData(bbrId, bfeNumber) {
   try {
@@ -1367,14 +1367,13 @@ async function fetchBBRData(bbrId, bfeNumber) {
 
     const urls = [];
 
-    // 1) Prøv BFE-nummer først, hvis vi har et
-    if (bfeNumber) {
-      urls.push(`${BBR_PROXY}/bygning?bfenummer=${encodeURIComponent(bfeNumber)}`);
-    }
-
-    // 2) Fald tilbage til husnummer-id
+// 1) Prøv husnummer-id først, hvis vi har et
     if (bbrId) {
       urls.push(`${BBR_PROXY}/bygning?husnummer=${encodeURIComponent(bbrId)}`);
+      }
+// 2) Fald tilbage til BFE-nummer
+    if (bfeNumber) {
+      urls.push(`${BBR_PROXY}/bygning?bfenummer=${encodeURIComponent(bfeNumber)}`);
     }
 
     for (let i = 0; i < urls.length; i++) {
