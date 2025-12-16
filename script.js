@@ -1367,33 +1367,6 @@ async function fetchBBRData(bbrId, bfeNumber) {
 
     const urls = [];
 
-// 1) Prøv husnummer-id først, hvis vi har et
-    if (bbrId) {
-      urls.push(`${BBR_PROXY}/bygning?husnummer=${encodeURIComponent(bbrId)}`);
-      }
-// 2) Fald tilbage til BFE-nummer
-    if (bfeNumber) {
-      urls.push(`${BBR_PROXY}/bygning?bfenummer=${encodeURIComponent(bfeNumber)}`);
-    }
-
-    for (let i = 0; i < urls.length; i++) {
-      const url = urls[i];
-      try {
-        const resp = await fetch(url);
-        if (!resp.ok) {
-          console.warn("BBR 2.1 proxy-fejl for URL", url, resp.status);
-          continue;
-        }
-
-        async function fetchBBRData(bbrId, bfeNumber) {
-  try {
-    if (!bbrId && !bfeNumber) {
-      console.warn("fetchBBRData kaldt uden husnummerId eller BFE-nummer");
-      return [];
-    }
-
-    const urls = [];
-
     // 1) Prøv husnummer-id først, hvis vi har et
     if (bbrId) {
       urls.push(`${BBR_PROXY}/bygning?husnummer=${encodeURIComponent(bbrId)}`);
@@ -1412,7 +1385,6 @@ async function fetchBBRData(bbrId, bfeNumber) {
           console.warn("BBR 2.1 proxy-fejl for URL", url, resp.status);
           continue;
         }
-
         const data = await resp.json();
         if (Array.isArray(data) && data.length > 0) {
           // Returnér alle bygninger uden filtrering
@@ -1432,7 +1404,7 @@ async function fetchBBRData(bbrId, bfeNumber) {
         if (bfeResp1.ok) {
           const bfeData = await bfeResp1.json();
           let bfeList = [];
-          const process = (obj) => {
+          const process = obj => {
             const val = findFirstMatchingField(obj, /bfe.*nummer/i);
             if (val != null) bfeList.push(String(val));
           };
@@ -1466,7 +1438,7 @@ async function fetchBBRData(bbrId, bfeNumber) {
         if (bfeResp2.ok) {
           const bfeData2 = await bfeResp2.json();
           let bfeList2 = [];
-          const process2 = (obj) => {
+          const process2 = obj => {
             const val = findFirstMatchingField(obj, /bfe.*nummer/i);
             if (val != null) bfeList2.push(String(val));
           };
@@ -1496,24 +1468,6 @@ async function fetchBBRData(bbrId, bfeNumber) {
     }
 
     // Ingen bygninger fundet
-    return [];
-  } catch (e) {
-    console.error("BBR fetch error via proxy:", e);
-    return [];
-  }
-}
-
-            return [ primaryList[0] ];
-          }
-          return data;
-        }
-            
-      } catch (innerErr) {
-        console.warn("BBR fetch-fejl for URL", url, innerErr);
-      }
-    }
-
-    // Hvis ingen af opslagene gav noget, returner tom liste
     return [];
   } catch (e) {
     console.error("BBR fetch error via proxy:", e);
