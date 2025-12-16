@@ -1856,8 +1856,20 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
 
   fetchBBRData(bbrId, bfeNumber)
     .then(async data => {
-      // Kombinér bygninger med tekniske anlæg fra BBR-proxy
-      const tekniske = await fetchBBRTekniskeAnlaeg(bbrId, bfeNumber);
+            // Kombinér bygninger med tekniske anlæg fra BBR-proxy
+      // VIGTIGT: tekniske anlæg skal hentes på BFE-nummer (ikke husnummer/adgangsadresseid),
+      // og BFE-nummeret skal derfor udledes fra de bygninger vi allerede har hentet.
+      const bfeListForTekniske = collectBfeNumbersFromBuildings(data, bfeNumber);
+
+      let tekniske = [];
+      for (let i = 0; i < bfeListForTekniske.length; i++) {
+        const bfe = bfeListForTekniske[i];
+        const tmp = await fetchBBRTekniskeAnlaeg(null, bfe);
+        if (Array.isArray(tmp) && tmp.length > 0) {
+          tekniske = tekniske.concat(tmp);
+        }
+      }
+
       const combined = (Array.isArray(data) ? data : []).concat(
         Array.isArray(tekniske) ? tekniske : []
       );
