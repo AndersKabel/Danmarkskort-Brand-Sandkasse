@@ -1385,7 +1385,7 @@ async function fetchBBRData(bbrId, bfeNumber) {
 
     // 2) Fald tilbage til husnummer-id
     if (bbrId) {
-      urls.push(`${BBR_PROXY}/bygning?husnummerid=${encodeURIComponent(bbrId)}`);
+      urls.push(`${BBR_PROXY}/bygning?husnummer=${encodeURIComponent(bbrId)}`);
     }
 
     for (let i = 0; i < urls.length; i++) {
