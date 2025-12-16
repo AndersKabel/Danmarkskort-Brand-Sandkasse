@@ -1475,6 +1475,26 @@ async function fetchBBRData(bbrId, bfeNumber) {
   }
 }
 
+async function fetchBBRTekniskeAnlaeg(adresseId, bfeNumber) {
+  try {
+    let url;
+    if (adresseId) {
+      url = `${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseid=${encodeURIComponent(adresseId)}`;
+    } else if (bfeNumber) {
+      url = `${BBR_PROXY}/tekniskeAnlaeg?bfenummer=${encodeURIComponent(bfeNumber)}`;
+    } else {
+      return [];
+    }
+    const resp = await fetch(url);
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return Array.isArray(data) ? data : [data];
+  } catch (err) {
+    console.warn("Fejl ved hentning af tekniske anlæg:", err);
+    return [];
+  }
+}
+
 // Hjælpefunktion: find første felt i et objekt (og evt. underobjekter), hvor nøglen matcher et regex.
 function findFirstMatchingField(obj, regex) {
   if (!obj || typeof obj !== "object") return null;
