@@ -1387,8 +1387,30 @@ async function fetchBBRData(bbrId, bfeNumber) {
 
         const data = await resp.json();
         if (Array.isArray(data) && data.length > 0) {
+          // Filtrér eventuelle flere bygninger for kun at vise én entydig bygning
+          if (data.length > 1) {
+            let primaryList = data.filter(b => {
+              const building = b && b.bygning ? b.bygning : b;
+              const anvKode = building["byg021BygningensAnvendelse"] ?? getBBRCode(building, "bygningsanvendelse", /anvendelse/i);
+              return !(anvKode && Number(anvKode) >= 910 && Number(anvKode) <= 999);
+            });
+            if (primaryList.length === 0) {
+              primaryList = data;
+            }
+            if (primaryList.length > 1) {
+              primaryList.sort((a, b) => {
+                const aB = a && a.bygning ? a.bygning : a;
+                const bB = b && b.bygning ? b.bygning : b;
+                const aArea = Number(aB["byg038SamletBygningsareal"] ?? getBBRValue(aB, "samletBygningsareal", /samlet.*bygningsareal/i)) || 0;
+                const bArea = Number(bB["byg038SamletBygningsareal"] ?? getBBRValue(bB, "samletBygningsareal", /samlet.*bygningsareal/i)) || 0;
+                return bArea - aArea;
+              });
+            }
+            return [ primaryList[0] ];
+          }
           return data;
         }
+            
       } catch (innerErr) {
         console.warn("BBR fetch-fejl for URL", url, innerErr);
       }
