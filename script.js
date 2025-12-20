@@ -2047,7 +2047,7 @@ function hideBBRInfo() {
  * Render BBR-info i infoboksen. Viser et antal bygninger og detaljer i <details>-elementer.
  * Hvis ingen data findes, vises en besked.
  */
-function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
+function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
   const bbrBox = document.getElementById("bbrInfoBox");
   if (!bbrBox) return;
 
