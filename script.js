@@ -2140,9 +2140,15 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
 
       const buildingsOnly = Array.isArray(data) ? data : [];
       const tekniskeOnly = Array.isArray(tekniske) ? tekniske : [];
-
-      // Hvis der hverken er bygninger eller tekniske anlæg
-      if (buildingsOnly.length === 0 && tekniskeOnly.length === 0) {
+      // Hvis der slet ingen BBR‑objekter er (hverken bygninger,
+      // tekniske anlæg, grund, enheder eller ejendomsrelationer)
+      const hasAnyBBR =
+        buildingsOnly.length > 0 ||
+        tekniskeOnly.length > 0 ||
+        (Array.isArray(grundOnly) && grundOnly.length > 0) ||
+        (Array.isArray(enhedOnly) && enhedOnly.length > 0) ||
+        (Array.isArray(ejendomsrelationOnly) && ejendomsrelationOnly.length > 0);
+      if (!hasAnyBBR) {
         bbrBox.innerHTML = `
   <div class="bbr-header" style="position: relative;">
     <span class="bbr-title">BBR – bygninger på adressen</span>
