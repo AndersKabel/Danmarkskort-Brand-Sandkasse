@@ -1922,6 +1922,96 @@ function getBBRValue(obj, primaryKey, fallbackRegex) {
 
   return null;
 }
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatMaybe(value) {
+  if (value === null || value === undefined) return null;
+  const s = String(value).trim();
+  if (s === "") return null;
+  return s;
+}
+
+function pickFirst(obj, regexList) {
+  if (!obj || typeof obj !== "object") return null;
+  for (let i = 0; i < regexList.length; i++) {
+    const v = findFirstMatchingField(obj, regexList[i]);
+    const fv = formatMaybe(v);
+    if (fv != null) return fv;
+  }
+  return null;
+}
+
+function renderKeyValueList(pairs) {
+  let html = "<ul style=\"margin:6px 0 10px 18px; padding:0;\">";
+  pairs.forEach(p => {
+    const label = p.label;
+    const value = p.value;
+    if (value != null && String(value).trim() !== "") {
+      html += "<li><strong>" + escapeHtml(label) + ":</strong> " + escapeHtml(value) + "</li>";
+    }
+  });
+  html += "</ul>";
+  return html;
+}
+
+function summarizeGrund(g) {
+  // Typiske felter i “Grund” kan variere – derfor regex-baseret.
+  const bfe = pickFirst(g, [/bfe.*nummer/i, /bfenr/i]);
+  const mat = pickFirst(g, [/matrikel/i, /matr.*nr/i]);
+  const ejerlav = pickFirst(g, [/ejerlav/i]);
+  const areal = pickFirst(g, [/areal/i, /grund.*areal/i]);
+  const grundId = pickFirst(g, [/grund.*id/i, /id/i]);
+
+  return [
+    { label: "Grund-ID", value: grundId },
+    { label: "BFE-nummer", value: bfe },
+    { label: "Matrikel", value: mat },
+    { label: "Ejerlav", value: ejerlav },
+    { label: "Areal", value: areal }
+  ];
+}
+
+function summarizeEnhed(e) {
+  const enhedId = pickFirst(e, [/enhed.*id/i, /id/i]);
+  const bfe = pickFirst(e, [/bfe.*nummer/i, /bfenr/i]);
+  const enhNr = pickFirst(e, [/enh.*nummer/i, /enhed.*nummer/i]);
+  const anv = pickFirst(e, [/anvendelse/i]);
+  const etage = pickFirst(e, [/etage/i]);
+  const doer = pickFirst(e, [/d[oø]r/i, /doer/i]);
+  const areal = pickFirst(e, [/areal/i, /bolig.*areal/i, /enhed.*areal/i]);
+
+  return [
+    { label: "Enhed-ID", value: enhedId },
+    { label: "BFE-nummer", value: bfe },
+    { label: "Enhed-nummer", value: enhNr },
+    { label: "Anvendelse", value: anv },
+    { label: "Etage", value: etage },
+    { label: "Dør", value: doer },
+    { label: "Areal", value: areal }
+  ];
+}
+
+function summarizeEjendomsrelation(er) {
+  const relId = pickFirst(er, [/ejendomsrelation.*id/i, /id/i]);
+  const bfe = pickFirst(er, [/bfe.*nummer/i, /bfenr/i]);
+  const type = pickFirst(er, [/relation.*type/i, /type/i]);
+  const status = pickFirst(er, [/status/i]);
+
+  return [
+    { label: "Relation-ID", value: relId },
+    { label: "BFE-nummer", value: bfe },
+    { label: "Type", value: type },
+    { label: "Status", value: status }
+  ];
+}
 
 function describeBBRCode(dict, code) {
   if (code === null || code === undefined || code === "") return null;
