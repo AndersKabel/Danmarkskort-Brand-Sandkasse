@@ -1341,7 +1341,9 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
 
     if (bbrId || bfeNumber) {
       // Videresend til BBR-visningsfunktionen med både husnummer-id og BFE
-      renderBBRInfo(bbrId, lat, lon, bfeNumber);
+            const adresseIdForEnhed = (data && data.id) ? data.id : null;
+      renderBBRInfo(bbrId, adresseIdForEnhed, lat, lon, bfeNumber);
+
     } else {
       const bbrBox = document.getElementById("bbrInfoBox");
       if (bbrBox) {
