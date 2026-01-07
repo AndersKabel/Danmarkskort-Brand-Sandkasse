@@ -1488,6 +1488,7 @@ async function fetchBBRData(bbrId, bfeNumber) {
       }
     }
 
+    /*
     // Hvis ingen bygninger er fundet, prøv Datafordeler via bbr-proxy:
     // Først via husnummerTilBygningBfe, derefter adresseTilEnhedBfe
     if (bbrId) {
@@ -1559,7 +1560,7 @@ async function fetchBBRData(bbrId, bfeNumber) {
         console.warn("Fejl ved adresseTilEnhedBfe-fallback:", err);
       }
     }
-
+*/
     // Ingen bygninger fundet
     return [];
   } catch (e) {
