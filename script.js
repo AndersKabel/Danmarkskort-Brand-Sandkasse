@@ -2163,7 +2163,6 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
       }
       const tekniskeOnly = Array.isArray(tekniske) ? tekniske : [];
       
-      const buildingsOnly = Array.isArray(data) ? data : [];
       const tekniskeOnly = Array.isArray(tekniske) ? tekniske : [];
       // Hvis der slet ingen BBR‑objekter er (hverken bygninger,
       // tekniske anlæg, grund, enheder eller ejendomsrelationer)
