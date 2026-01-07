@@ -2180,8 +2180,61 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
           }
         }
       }
-            
+
+      // --- EKSTRA FALLBACK 2: bygninger via Ejendomsbeliggenhed ---
+      // Hvis vi STADIG ikke har nogen bygninger, så brug Ejendomsbeliggenhed
+      // til at finde relevante BFE-numre og prøv igen.
+      if (buildingsOnly.length === 0) {
+        try {
+          // BFE-kandidater: direkte BFE + BFE fra enheder
+          const baseBfeList   = collectBfeNumbersFromBuildings(data, bfeNumber);
+          const enhedBfeList  = collectBfeNumbersFromEnheder(enhedOnly);
+          const allBfeCandSet = new Set([
+            ...baseBfeList,
+            ...enhedBfeList
+          ]);
+          const allBfeCandidates = Array.from(allBfeCandSet);
+
+          if (allBfeCandidates.length > 0) {
+            console.log("Ejendomsbeliggenhed-fallback: BFE-kandidater", allBfeCandidates);
+            const ejdListe = await fetchEjendomsbeliggenhedForBFE(allBfeCandidates);
+            const ekstraBfeSet = new Set();
+
+            (ejdListe || []).forEach(ejd => {
+              const props = ejd && ejd.properties ? ejd.properties : ejd;
+              if (!props || typeof props !== "object") return;
+
+              // typisk felt: bestemtFastEjendomBFENr
+              const bfeVal =
+                props.bestemtFastEjendomBFENr ||
+                findFirstMatchingField(props, /bestemt.*bfe.*nummer/i);
+
+              if (bfeVal != null && String(bfeVal).trim() !== "") {
+                ekstraBfeSet.add(String(bfeVal).trim());
+              }
+            });
+
+            const ekstraBfe = Array.from(ekstraBfeSet);
+            console.log("Ejendomsbeliggenhed-fallback: ekstra BFE", ekstraBfe);
+
+            for (const bfe of ekstraBfe) {
+              try {
+                const extraBuildings = await fetchBBRData(null, bfe);
+                if (Array.isArray(extraBuildings) && extraBuildings.length > 0) {
+                  buildingsOnly = buildingsOnly.concat(extraBuildings);
+                }
+              } catch (err) {
+                console.warn("BBR-opslag via Ejendomsbeliggenhed BFE fejlede for", bfe, err);
+              }
+            }
+          }
+        } catch (err) {
+          console.warn("Fejl i Ejendomsbeliggenhed-fallback:", err);
+        }
+      }
+
       const tekniskeOnly = Array.isArray(tekniske) ? tekniske : [];
+
       // Hvis der slet ingen BBR‑objekter er (hverken bygninger,
       // tekniske anlæg, grund, enheder eller ejendomsrelationer)
       const hasAnyBBR =
