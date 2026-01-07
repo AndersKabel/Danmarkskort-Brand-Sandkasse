@@ -1673,6 +1673,22 @@ function collectBfeNumbersFromBuildings(buildings, fallbackBfeNumber) {
   return Array.from(result);
 }
 
+// Hjælpefunktion: saml BFE-numre fra enheder
+function collectBfeNumbersFromEnheder(enhedList) {
+  const result = new Set();
+  if (!Array.isArray(enhedList)) return [];
+
+  enhedList.forEach(e => {
+    if (!e || typeof e !== "object") return;
+    const bfeVal = findFirstMatchingField(e, /bfe.*nummer/i);
+    if (bfeVal != null && String(bfeVal).trim() !== "") {
+      result.add(String(bfeVal).trim());
+    }
+  });
+
+  return Array.from(result);
+}
+
 // Hjælpefunktion: hent Ejendomsbeliggenhed-data for et eller flere BFE-numre via proxien.
 async function fetchEjendomsbeliggenhedForBFE(bfeNumbers) {
   try {
