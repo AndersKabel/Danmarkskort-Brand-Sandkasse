@@ -1564,7 +1564,39 @@ async function fetchBBRData(bbrId, bfeNumber) {
       }
     }
 */
-    // Ingen bygninger fundet
+        // Ingen bygninger fundet via direkte /bygning-opslag.
+    // NYT: DOBBELT DAR_BFE-kald (begge sendes hver gang), og brug det der giver data.
+    try {
+      const husId = (bbrId != null && String(bbrId).trim() !== "")
+        ? String(bbrId).trim()
+        : (lastSelectedHusnummerIdForBBR != null ? String(lastSelectedHusnummerIdForBBR).trim() : null);
+
+      const adrId = (lastSelectedAdresseIdForBBR != null && String(lastSelectedAdresseIdForBBR).trim() !== "")
+        ? String(lastSelectedAdresseIdForBBR).trim()
+        : null;
+
+      const bfeList = await fetchBfeNumbersViaDarBfeDual(husId, adrId);
+
+      // Hvis vi fik BFE-numre, så prøv at hente bygninger via BFE
+      if (Array.isArray(bfeList) && bfeList.length > 0) {
+        for (let i = 0; i < bfeList.length; i++) {
+          const bfe = bfeList[i];
+          try {
+            const resp = await fetch(`${BBR_PROXY}/bygning?bfenummer=${encodeURIComponent(bfe)}`, { method: "GET" });
+            if (!resp.ok) continue;
+            const buildings = await resp.json();
+            if (Array.isArray(buildings) && buildings.length > 0) {
+              return buildings;
+            }
+          } catch (e) {
+            // Ignorér og prøv næste BFE
+          }
+        }
+      }
+    } catch (e) {
+      // Ignorér – vi falder tilbage til []
+    }
+
     return [];
   } catch (e) {
     console.error("BBR fetch error via proxy:", e);
