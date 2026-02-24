@@ -2128,6 +2128,48 @@ function summarizeEjendomsrelation(er) {
   ];
 }
 
+// --- Hjælper: parse "POINT(x y)" fra BBR-felter (typisk UTM/EPSG:25832) ---
+function parseWKTPoint(wkt) {
+  if (!wkt || typeof wkt !== "string") return null;
+  const m = wkt.match(/POINT\s*\(\s*([0-9.+-]+)\s+([0-9.+-]+)\s*\)/i);
+  if (!m) return null;
+  const x = parseFloat(m[1]);
+  const y = parseFloat(m[2]);
+  if (isNaN(x) || isNaN(y)) return null;
+  return [x, y]; // EPSG:25832 (øst, nord)
+}
+
+// --- Hjælper: find koordinater i et teknisk anlæg-objekt (robust via regex) ---
+function getTekniskAnlaegLatLon(t, fallbackLat, fallbackLon) {
+  if (!t || typeof t !== "object") return null;
+
+  // 1) Prøv at finde et felt der ligner "....Koordinat" som WKT POINT(...)
+  const wkt = pickFirst(t, [/koordinat/i, /point/i]);
+  const xy = parseWKTPoint(wkt);
+  if (xy) {
+    // convertToWGS84(x,y) forventer EPSG:25832 => return [lat, lon]
+    const ll = convertToWGS84(xy[0], xy[1]);
+    return ll ? [ll[0], ll[1]] : null;
+  }
+
+  // 2) Prøv GeoJSON-lignende felter (hvis nogle datasæt giver det)
+  if (t.geometri && Array.isArray(t.geometri.koordinater) && t.geometri.koordinater.length >= 2) {
+    const lon = t.geometri.koordinater[0];
+    const lat = t.geometri.koordinater[1];
+    if (Math.abs(lat) <= 90 && Math.abs(lon) <= 180) return [lat, lon];
+    // ellers antag EPSG:25832
+    const ll = convertToWGS84(lon, lat);
+    return ll ? [ll[0], ll[1]] : null;
+  }
+
+  // 3) Fallback til klikpunkt/adressepunkt
+  if (typeof fallbackLat === "number" && typeof fallbackLon === "number") {
+    return [fallbackLat, fallbackLon];
+  }
+
+  return null;
+}
+
 function describeBBRCode(dict, code) {
   if (code === null || code === undefined || code === "") return null;
   const key = String(code);
