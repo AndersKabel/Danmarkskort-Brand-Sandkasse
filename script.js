@@ -2525,6 +2525,13 @@ buildingsOnly = Array.from(new Map(buildingsOnly.map(b => {
   }
 
       const tekniskeOnly = Array.isArray(tekniske) ? tekniske : [];
+    // Fjern dubletter igen efter evt. fallback-kald, før vi tjekker hasAnyBBR
+buildingsOnly = Array.from(new Map(buildingsOnly.map(b => {
+  const obj = (b && b.bygning) ? b.bygning : b;
+  const id = obj && (obj.id_lokalId || obj.id) ? (obj.id_lokalId || obj.id) : JSON.stringify(obj);
+  return [id, b];
+})).values());
+
 
       // ----- TEKNISKE ANLÆG: tilføj markører på kortet (T1, T2, ...) -----
 if (tekniskeOnly.length > 0) {
