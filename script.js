@@ -2245,6 +2245,86 @@ function renderKeyValueList(pairs) {
   return html;
 }
 
+function formatBooleanDa(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "boolean") return value ? "Ja" : "Nej";
+  const s = String(value).trim().toLowerCase();
+  if (!s) return null;
+  if (["1", "true", "ja", "yes", "y", "sand", "sandt"].includes(s)) return "Ja";
+  if (["0", "false", "nej", "no", "n", "falsk"].includes(s)) return "Nej";
+  return null;
+}
+
+function resolveOverlappingMarkerLatLon(lat, lon, keyPrefix, usedCoordsMap) {
+  if (typeof lat !== "number" || typeof lon !== "number") return [lat, lon];
+  const mapRef = usedCoordsMap || new Map();
+  const key = `${keyPrefix}:${lat.toFixed(7)},${lon.toFixed(7)}`;
+  const overlapCount = mapRef.get(key) || 0;
+  mapRef.set(key, overlapCount + 1);
+
+  if (overlapCount === 0) {
+    return [lat, lon];
+  }
+
+  // Små offsets (meter) så markører med samme koordinat bliver synlige hver for sig.
+  const angle = (overlapCount * Math.PI) / 3;
+  const meters = 3 + overlapCount * 2;
+  const dLat = (meters / 111320) * Math.sin(angle);
+  const dLon = (meters / (111320 * Math.max(Math.cos((lat * Math.PI) / 180), 0.1))) * Math.cos(angle);
+  return [lat + dLat, lon + dLon];
+}
+
+function summarizeTekniskAnlaeg(t) {
+  const anlTypeKode = pickFirst(t, [/teknisk.*anl[æae]g.*type.*kode/i, /anlaegstype.*kode/i, /teknisk.*anlaeg.*kode/i]);
+  const anlTypeTekst = pickFirst(t, [/teknisk.*anl[æae]g.*type.*tekst/i, /anlaegstype.*tekst/i, /anlaegstype/i]);
+  const anvTekst = pickFirst(t, [/anvendelse.*tekst/i, /anvendelse/i]);
+  const status = pickFirst(t, [/status/i, /driftstatus/i, /aktiv/i]);
+  const etableret = pickFirst(t, [/etabler/i, /installationsdato/i, /oprettet/i]);
+  const afmeldt = pickFirst(t, [/afmeld/i, /nedlagt/i, /sl[øo]jfet/i]);
+  const nedgravet = pickFirst(t, [/nedgrav/i]);
+  const afblaendet = pickFirst(t, [/afbl[æae]nd/i]);
+  const volumen = pickFirst(t, [/volumen/i, /liter/i, /indhold/i, /kapacitet/i]);
+  const materiale = pickFirst(t, [/materiale/i]);
+  const opdateret = pickFirst(t, [/opdateringstid/i, /revisionsdato/i]);
+
+  const headerParts = [];
+  if (anlTypeTekst) {
+    headerParts.push(anlTypeTekst);
+  } else if (anlTypeKode != null) {
+    headerParts.push(`Typekode ${anlTypeKode}`);
+  }
+  if (anvTekst && (!anlTypeTekst || anvTekst !== anlTypeTekst)) {
+    headerParts.push(anvTekst);
+  }
+
+  const pairs = [
+    { label: "Type", value: anlTypeTekst || (anlTypeKode != null ? `Kode ${anlTypeKode}` : null) },
+    { label: "Anvendelse", value: anvTekst },
+    { label: "Status", value: status },
+    { label: "Nedgravet", value: formatBooleanDa(nedgravet) || formatMaybe(nedgravet) },
+    { label: "Afblændet", value: formatBooleanDa(afblaendet) || formatMaybe(afblaendet) },
+    { label: "Volumen", value: formatMaybe(volumen) },
+    { label: "Materiale", value: formatMaybe(materiale) },
+    { label: "Etableret", value: formatMaybe(etableret) },
+    { label: "Afmeldt/Nedlagt", value: formatMaybe(afmeldt) },
+    { label: "Data opdateret", value: formatMaybe(opdateret) }
+  ];
+
+  return {
+    title: headerParts.length > 0 ? headerParts.join(" – ") : "Teknisk anlæg",
+    pairs
+  };
+}
+
+function renderTekniskAnlaegPopupHtml(t, index) {
+  const summary = summarizeTekniskAnlaeg(t);
+  return `
+    <strong>Teknisk anlæg ${index + 1}</strong><br>
+    <span>${escapeHtml(summary.title)}</span>
+    ${renderKeyValueList(summary.pairs)}
+  `;
+}
+
 function summarizeGrund(g) {
   // Typiske felter i “Grund” kan variere – derfor regex-baseret.
   const bfe = pickFirst(g, [/bfe.*nummer/i, /bfenr/i]);
@@ -2702,7 +2782,8 @@ buildingsOnly = Array.from(new Map(buildingsOnly.map(b => {
   return [id, b];
 })).values());
 
-
+const usedMarkerCoordsMap = new Map();
+    
       // ----- TEKNISKE ANLÆG: tilføj markører på kortet (T1, T2, ...) -----
 if (tekniskeOnly.length > 0) {
   tekniskeOnly.forEach((t, tIdx) => {
@@ -2722,10 +2803,10 @@ if (tekniskeOnly.length > 0) {
       iconAnchor: [12, 12]
     });
 
-    const m = L.marker([tLat, tLon], { icon: techIcon });
+    const resolvedTechLatLon = resolveOverlappingMarkerLatLon(tLat, tLon, "tech", usedMarkerCoordsMap);
+    const m = L.marker([resolvedTechLatLon[0], resolvedTechLatLon[1]], { icon: techIcon });
 
-    // Valgfri popup med “rå” data (kort)
-    m.bindPopup(`<strong>Teknisk anlæg ${tIdx + 1}</strong><br><pre style="max-width:320px; max-height:180px; overflow:auto;">${escapeHtml(JSON.stringify(t, null, 2))}</pre>`);
+    m.bindPopup(renderTekniskAnlaegPopupHtml(t, tIdx));
 
     // Genbrug samme layer som bygninger, så din eksisterende "addTo(map)" logik virker
     m.addTo(bbrBuildingsLayer);
@@ -2945,7 +3026,8 @@ if (buildingsOnly && buildingsOnly.length > 0) {
             iconAnchor: [12, 12]
           });
 
-          const m = L.marker([bLat, bLon], { icon: buildingIcon });
+          const resolvedBuildingLatLon = resolveOverlappingMarkerLatLon(bLat, bLon, "building", usedMarkerCoordsMap);
+          const m = L.marker([resolvedBuildingLatLon[0], resolvedBuildingLatLon[1]], { icon: buildingIcon });
           m.addTo(bbrBuildingsLayer);
         }
       });
@@ -2957,8 +3039,10 @@ if (buildingsOnly && buildingsOnly.length > 0) {
 `;
 
         tekniskeOnly.forEach((t, tIdx) => {
+          const techSummary = summarizeTekniskAnlaeg(t);
           html += `<details>
-  <summary>Teknisk anlæg ${tIdx + 1}</summary>
+  <summary>Teknisk anlæg ${tIdx + 1} – ${escapeHtml(techSummary.title)}</summary>
+  ${renderKeyValueList(techSummary.pairs)}
   <details>
     <summary>Vis rå teknisk anlæg-data</summary>
     <pre>${JSON.stringify(t, null, 2)}</pre>
