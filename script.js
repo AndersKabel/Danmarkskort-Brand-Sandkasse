@@ -2303,6 +2303,12 @@ function hideBBRInfo() {
     }
   }
 }
+    if (bbrFootprintsLayer) {
+      bbrFootprintsLayer.clearLayers();
+      if (map.hasLayer(bbrFootprintsLayer)) {
+        map.removeLayer(bbrFootprintsLayer);
+      }
+    }
 
 /**
  * Render BBR-info i infoboksen. Viser et antal bygninger og detaljer i <details>-elementer.
