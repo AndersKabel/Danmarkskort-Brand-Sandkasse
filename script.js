@@ -2523,6 +2523,21 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
         let bLat = null;
         let bLon = null;
 
+                // NYT: understøt byg404Koordinat (WKT POINT i EPSG:25832)
+        // Datafordeler BBRPublic returnerer ofte kun punktet her – ikke building.geometri
+        if (typeof building["byg404Koordinat"] === "string") {
+          const m = building["byg404Koordinat"].match(/POINT\s*\(\s*([0-9.+-]+)\s+([0-9.+-]+)\s*\)/i);
+          if (m) {
+            // WKT POINT(x y) hvor x/y er EPSG:25832 (UTM32)
+            const x = parseFloat(m[1]);
+            const y = parseFloat(m[2]);
+            if (!isNaN(x) && !isNaN(y)) {
+              bLon = x;
+              bLat = y;
+            }
+          }
+        }
+        
         if (building.geometri && Array.isArray(building.geometri.koordinater)) {
           const c = building.geometri.koordinater;
           if (c.length >= 2) {
