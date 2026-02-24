@@ -2238,7 +2238,9 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
       // ----- TEKNISKE ANLÆG -----
       // VIGTIGT: tekniske anlæg hentes på BFE-nummer.
       const bfeListForTekniske = collectBfeNumbersFromBuildings(data, bfeNumber);
-
+      console.log("bfeNumber (fallback):", bfeNumber);
+      console.log("bfeListForTekniske:", bfeListForTekniske);
+      
       let tekniske = [];
       for (let i = 0; i < bfeListForTekniske.length; i++) {
         const bfe = bfeListForTekniske[i];
