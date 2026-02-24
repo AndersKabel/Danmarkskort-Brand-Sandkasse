@@ -2156,6 +2156,25 @@ function pickFirst(obj, regexList) {
   return null;
 }
 
+function collectMatchingFields(obj, regex, out = []) {
+  if (!obj || typeof obj !== "object") return out;
+
+  for (const key in obj) {
+    if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+    const value = obj[key];
+
+    if (regex.test(key)) {
+      out.push(value);
+    }
+
+    if (value && typeof value === "object") {
+      collectMatchingFields(value, regex, out);
+    }
+  }
+
+  return out;
+}
+
 function renderKeyValueList(pairs) {
   let html = "<ul style=\"margin:6px 0 10px 18px; padding:0;\">";
   pairs.forEach(p => {
@@ -2223,12 +2242,50 @@ function summarizeEjendomsrelation(er) {
 // --- Hjælper: parse "POINT(x y)" fra BBR-felter (typisk UTM/EPSG:25832) ---
 function parseWKTPoint(wkt) {
   if (!wkt || typeof wkt !== "string") return null;
-  const m = wkt.match(/POINT\s*\(\s*([0-9.+-]+)\s+([0-9.+-]+)\s*\)/i);
+  const m = wkt.match(/POINT\s*(?:Z\s*)?\(\s*([0-9.+-]+)\s+([0-9.+-]+)(?:\s+[0-9.+-]+)?\s*\)/i);
   if (!m) return null;
   const x = parseFloat(m[1]);
   const y = parseFloat(m[2]);
   if (isNaN(x) || isNaN(y)) return null;
   return [x, y]; // EPSG:25832 (øst, nord)
+}
+
+function parseWKTGeometryLatLon(wkt) {
+  if (!wkt || typeof wkt !== "string") return null;
+
+  const point = parseWKTPoint(wkt);
+  if (point) {
+    const ll = convertToWGS84(point[0], point[1]);
+    return ll ? [ll[0], ll[1]] : null;
+  }
+
+  if (typeof wellknown === "undefined" || !wellknown.parse) return null;
+  if (typeof turf === "undefined" || !turf.centerOfMass) return null;
+
+  try {
+    const geom = wellknown.parse(wkt);
+    if (!geom) return null;
+
+    const feature = turf.feature(geom);
+    const center = turf.centerOfMass(feature);
+    if (!center || !center.geometry || !Array.isArray(center.geometry.coordinates)) return null;
+
+    const c = center.geometry.coordinates;
+    if (c.length < 2) return null;
+
+    const x = Number(c[0]);
+    const y = Number(c[1]);
+    if (Number.isNaN(x) || Number.isNaN(y)) return null;
+
+    if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
+      return [y, x];
+    }
+
+    const ll = convertToWGS84(x, y);
+    return ll ? [ll[0], ll[1]] : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 // Henter ejendomsgrænser (jordstykker) som GeoJSON fra Dataforsyningen ved featureId
@@ -2250,13 +2307,13 @@ async function fetchJordstykkeGeoJSON(featureId) {
 function getTekniskAnlaegLatLon(t, fallbackLat, fallbackLon) {
   if (!t || typeof t !== "object") return null;
 
-  // 1) Prøv at finde et felt der ligner "....Koordinat" som WKT POINT(...)
-  const wkt = pickFirst(t, [/koordinat/i, /point/i]);
-  const xy = parseWKTPoint(wkt);
-  if (xy) {
-    // convertToWGS84(x,y) forventer EPSG:25832 => return [lat, lon]
-    const ll = convertToWGS84(xy[0], xy[1]);
-    return ll ? [ll[0], ll[1]] : null;
+ // 1) Prøv at finde geometri-felter (WKT POINT/POLYGON/MULTIPOLYGON)
+  const coordinateCandidates = collectMatchingFields(t, /koordinat|geometri|wkt|punkt|point/i);
+  for (let i = 0; i < coordinateCandidates.length; i++) {
+    const candidate = coordinateCandidates[i];
+    if (typeof candidate !== "string") continue;
+    const ll = parseWKTGeometryLatLon(candidate);
+    if (ll) return ll;
   }
 
   // 2) Prøv GeoJSON-lignende felter (hvis nogle datasæt giver det)
