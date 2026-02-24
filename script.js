@@ -2635,7 +2635,7 @@ if (tekniskeOnly.length > 0) {
             bLon = converted[1];
           }
 
-          const labelText = bygningsnr != null ? String(bygningsnr) : String(idx + 1);
+          const labelText = String(idx + 1);
 
           const iconHtml = `<div class="bbr-building-icon">${labelText}</div>`;
           const buildingIcon = L.divIcon({
