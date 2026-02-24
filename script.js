@@ -888,6 +888,9 @@ var chargeMapLayer = L.layerGroup();
 // NYT: lag til at samle ekstra markører, når "Behold markører" er slået til
 var keepMarkersLayer   = L.layerGroup();
 var bbrBuildingsLayer = L.layerGroup();
+// Seneste DK-adressevalg (bruges til at kunne sende DOBBELT DAR_BFE-kald hver gang)
+var lastSelectedHusnummerIdForBBR = null; // adgangsadresse-id (husnummerId)
+var lastSelectedAdresseIdForBBR = null;   // enhedsadresse-id (adresseId)
 var keepMarkersEnabled = false;
 
 // Global reference til "seneste" markør (bruges bl.a. til radius)
