@@ -2328,7 +2328,7 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
       // ----- GRUND / ENHED / EJENDOMSRELATION -----
       // Disse kald bruger de nye helper-funktioner fra trin 2.
       // Vi forsøger primært på BFE (fordi det typisk er mest stabilt på tværs af BBR-objekter).
-      const bfeListForGrundOgEjd = collectBfeNumbersFromBuildings(data, bfeNumber);
+      const bfeListForGrundOgEjd = bfeCombined;
 
       let grundOnly = [];
       for (let i = 0; i < bfeListForGrundOgEjd.length; i++) {
