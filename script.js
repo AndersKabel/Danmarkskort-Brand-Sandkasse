@@ -916,7 +916,8 @@ const overlayMaps = {
   "Kommunegrænser": kommunegrænserLayer,
   "Rutenummereret vejnet": rutenummerLayer,
   // NYT: overlay til at beholde markører
-  "Behold markører": keepMarkersLayer
+  "Behold markører": keepMarkersLayer,
+    "BBR-matrikel": bbrFootprintsLayer
 };
 
 // Tilføj vejrlag, hvis API-nøgle er sat
