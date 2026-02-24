@@ -888,6 +888,15 @@ var chargeMapLayer = L.layerGroup();
 // NYT: lag til at samle ekstra markører, når "Behold markører" er slået til
 var keepMarkersLayer   = L.layerGroup();
 var bbrBuildingsLayer = L.layerGroup();
+// Nyt lag til BBR-bygninger/ejendomsarealer (polygoner)
+var bbrFootprintsLayer = L.geoJSON(null, {
+  style: {
+    color: "#008000",
+    weight: 2,
+    opacity: 0.7
+  }
+});
+
 // Seneste DK-adressevalg (bruges til at kunne sende DOBBELT DAR_BFE-kald hver gang)
 var lastSelectedHusnummerIdForBBR = null; // adgangsadresse-id (husnummerId)
 var lastSelectedAdresseIdForBBR = null;   // enhedsadresse-id (adresseId)
