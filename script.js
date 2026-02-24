@@ -2209,6 +2209,21 @@ function parseWKTPoint(wkt) {
   return [x, y]; // EPSG:25832 (øst, nord)
 }
 
+// Henter ejendomsgrænser (jordstykker) som GeoJSON fra Dataforsyningen ved featureId
+async function fetchJordstykkeGeoJSON(featureId) {
+  const url = `https://api.dataforsyningen.dk/jordstykker?featureid=${featureId}`;
+  const resp = await fetch(url);
+  if (!resp.ok) return [];
+  try {
+    const data = await resp.json();
+    // Returner GeoJSON-funktionen direkte (ejendomsgrænser som GeoJSON)
+    return data;
+  } catch (e) {
+    console.warn("Fejl ved parsning af jordstykke-JSON:", e);
+    return [];
+  }
+}
+
 // --- Hjælper: find koordinater i et teknisk anlæg-objekt (robust via regex) ---
 function getTekniskAnlaegLatLon(t, fallbackLat, fallbackLon) {
   if (!t || typeof t !== "object") return null;
