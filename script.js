@@ -2245,7 +2245,7 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
         // Brug både adresseId (adgangsadresseid) og BFE som parametre.
         // fetchBBRTekniskeAnlaeg håndterer selv at prøve adgangsadresseid først
         // og derefter bfenummer.
-        const tmp = await fetchBBRTekniskeAnlaeg(adresseId, bfe);
+        const tmp = await fetchBBRTekniskeAnlaeg(bbrId, bfe);
         if (Array.isArray(tmp) && tmp.length > 0) {
           tekniske = tekniske.concat(tmp);
         }
