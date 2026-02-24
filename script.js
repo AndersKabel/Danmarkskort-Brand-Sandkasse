@@ -2555,8 +2555,8 @@ buildingsOnly = Array.from(new Map(buildingsOnly.map(b => {
     }
 
     if (extraBuildingsFromGrund.length > 0) {
-      buildingsOnly = dedupeById(buildingsOnly);
       buildingsOnly = buildingsOnly.concat(extraBuildingsFromGrund);
+buildingsOnly = dedupeById(buildingsOnly);
     }
   }
 
