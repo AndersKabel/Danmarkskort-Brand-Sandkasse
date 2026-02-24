@@ -2953,29 +2953,6 @@ if (Array.isArray(ejendomsrelationOnly) && ejendomsrelationOnly.length > 0) {
 
       html += "</div>"; // .bbr-content slut
 
-    // Tegn matrikel-/jordstykke polygoner (hvis featureId kendes)
-(async () => {
-  // Eksempel: hent featureId fra ejendomsrelation eller BBR-data (USPECIFICERET nøglefelt)
-  const featureId = pickFirst(someEjendomsrelation, [/jordstykke/i, /featureid/i]) || null;
-  if (featureId) {
-    // Forsøg at hente GeoJSON fra Dataforsyningen
-    const url = `https://api.dataforsyningen.dk/jordstykke?featureid=${featureId}`;
-    try {
-      const resp = await fetch(url);
-      if (resp.ok) {
-        const data = await resp.json();
-        // Tegn polygonerne
-        L.geoJSON(data, {
-          style: { color: 'green', fillOpacity: 0.1, weight: 2 }
-        }).addTo(bbrFootprintsLayer);
-        bbrFootprintsLayer.addTo(map);
-      }
-    } catch(e) {
-      console.warn("Fejl ved hentning af jordstykke GeoJSON:", e);
-    }
-  }
-})();
-
       // Tilføj laget til kortet, hvis der er mindst én bygning
       if (bbrBuildingsLayer.getLayers().length > 0) {
         bbrBuildingsLayer.addTo(map);
