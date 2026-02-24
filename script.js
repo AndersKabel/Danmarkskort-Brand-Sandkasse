@@ -4252,23 +4252,37 @@ function toggleCircle(radius) {
     // Ingen ladestander-lag i Brand-version
   }
 }
-document.getElementById("btn10").addEventListener("click", function() {
-  selectedRadius = 10000;
-  toggleCircle(10000);
-});
-document.getElementById("btn25").addEventListener("click", function() {
-  selectedRadius = 25000;
-  toggleCircle(25000);
-});
-document.getElementById("btn50").addEventListener("click", function() {
-  selectedRadius = 50000;
-  toggleCircle(50000);
-});
-document.getElementById("btn100").addEventListener("click", function() {
-  selectedRadius = 100000;
-  toggleCircle(100000);
-});
+const btn10 = document.getElementById("btn10");
+if (btn10) {
+  btn10.addEventListener("click", function() {
+    selectedRadius = 10000;
+    toggleCircle(10000);
+  });
+}
 
+const btn25 = document.getElementById("btn25");
+if (btn25) {
+  btn25.addEventListener("click", function() {
+    selectedRadius = 25000;
+    toggleCircle(25000);
+  });
+}
+
+const btn50 = document.getElementById("btn50");
+if (btn50) {
+  btn50.addEventListener("click", function() {
+    selectedRadius = 50000;
+    toggleCircle(50000);
+  });
+}
+
+const btn100 = document.getElementById("btn100");
+if (btn100) {
+  btn100.addEventListener("click", function() {
+    selectedRadius = 100000;
+    toggleCircle(100000);
+  });
+}
 /*
  * DOMContentLoaded
  */
