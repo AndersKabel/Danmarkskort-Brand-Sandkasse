@@ -2705,6 +2705,22 @@ if (tekniskeOnly.length > 0) {
         let bLat = null;
         let bLon = null;
 
+        // NYT: tegn ejendomsfolier (parcelpolygoner) for hver grund-id
+if (buildingsOnly && buildingsOnly.length > 0) {
+  // Indsaml unikke grund-id'er (id_lokalId)
+  const grundIds = collectGrundIdsFromBuildings(buildingsOnly);
+  for (const gid of grundIds) {
+    try {
+      const geoData = await fetchJordstykkeGeoJSON(gid);
+      if (geoData && geoData.features) {
+        L.geoJSON(geoData).addTo(bbrFootprintsLayer);
+      }
+    } catch (e) {
+      console.warn("Fejl ved indlæsning af ejendomsareal for grund:", gid, e);
+    }
+  }
+}
+
                 // NYT: understøt byg404Koordinat (WKT POINT i EPSG:25832)
         // Datafordeler BBRPublic returnerer ofte kun punktet her – ikke building.geometri
         if (typeof building["byg404Koordinat"] === "string") {
