@@ -2919,6 +2919,11 @@ if (Array.isArray(ejendomsrelationOnly) && ejendomsrelationOnly.length > 0) {
         bbrBuildingsLayer.addTo(map);
       }
 
+    // Tilføj også folierne til kortet, hvis vi har polygoner
+if (bbrFootprintsLayer.getLayers().length > 0) {
+  bbrFootprintsLayer.addTo(map);
+}
+
       bbrBox.innerHTML = html;
 
       const closeEl = document.getElementById("bbrCloseBtn");
