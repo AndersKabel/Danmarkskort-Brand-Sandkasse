@@ -1675,7 +1675,7 @@ async function fetchBfeNumbersViaDarBfeDual(husnummerId, adresseId) {
 
 async function fetchBBRTekniskeAnlaeg(husnummerId, bfeNumber) {
   try {
-    if (!adresseId && !bfeNumber) {
+    if (!husnummerId && !bfeNumber) {
       return [];
     }
 
