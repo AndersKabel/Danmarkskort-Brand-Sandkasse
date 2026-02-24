@@ -1673,7 +1673,7 @@ async function fetchBfeNumbersViaDarBfeDual(husnummerId, adresseId) {
   return Array.from(out);
 }
 
-async function fetchBBRTekniskeAnlaeg(adresseId, bfeNumber) {
+async function fetchBBRTekniskeAnlaeg(husnummerId, bfeNumber) {
   try {
     if (!adresseId && !bfeNumber) {
       return [];
