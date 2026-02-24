@@ -1682,8 +1682,8 @@ async function fetchBBRTekniskeAnlaeg(husnummerId, bfeNumber) {
     const urls = [];
 
     // 1) Korrekt parameter til worker: adgangsadresseid
-    if (adresseId) {
-      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseid=${encodeURIComponent(adresseId)}`);
+       if (husnummerId) {
+      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseid=${encodeURIComponent(husnummerId)}`);
     }
 
     // 2) Fallback: BFE (hvis tekniske anlæg ikke kan hentes direkte på adgangsadresse)
