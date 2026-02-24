@@ -570,3 +570,25 @@
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
   border: 2px solid #fff;
 }
+
+/* ============================
+   BBR tekniske anlæg ikoner
+============================ */
+
+.bbr-tech-icon-wrapper {
+  border: none;
+  background: transparent;
+}
+
+.bbr-tech-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: rgba(220, 0, 0, 0.9);
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 24px;
+  text-align: center;
+  box-shadow: 0 0 4px rgba(0,0,0,0.6);
+}
