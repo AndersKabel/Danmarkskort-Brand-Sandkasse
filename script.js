@@ -2255,6 +2255,52 @@ function formatBooleanDa(value) {
   return null;
 }
 
+
+function formatDateDa(value) {
+  if (value == null) return null;
+  const s = String(value).trim();
+  if (!s) return null;
+
+  // ISO dato/tid
+  const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[3]}.${isoMatch[2]}.${isoMatch[1]}`;
+  }
+
+  // Allerede på format dd.mm.yyyy
+  if (/^\d{2}\.\d{2}\.\d{4}$/.test(s)) return s;
+  return s;
+}
+
+function asCodeString(value) {
+  if (value == null) return null;
+  const s = String(value).trim();
+  return s || null;
+}
+
+const BBR_TEKNISK_KLASSIFIKATION = {
+  "54.15.05.05": "Tank",
+  "TANK": "Tank"
+};
+
+const BBR_TEKNISK_STATUS = {
+  "6": "Afblændet"
+};
+
+const BBR_TEKNISK_STOERRELSESKLASSE = {
+  "10": "Under 6.000 l"
+};
+
+const BBR_TEKNISK_INDHOLD = {
+  "1001": "Mineralske olieprodukter"
+};
+
+function describeCodeWithFallback(dict, value) {
+  const code = asCodeString(value);
+  if (!code) return null;
+  return dict[code] ? `${dict[code]} (${code})` : `Kode ${code}`;
+}
+
 function resolveOverlappingMarkerLatLon(lat, lon, keyPrefix, usedCoordsMap) {
   if (typeof lat !== "number" || typeof lon !== "number") return [lat, lon];
   const mapRef = usedCoordsMap || new Map();
@@ -2275,39 +2321,60 @@ function resolveOverlappingMarkerLatLon(lat, lon, keyPrefix, usedCoordsMap) {
 }
 
 function summarizeTekniskAnlaeg(t) {
-  const anlTypeKode = pickFirst(t, [/teknisk.*anl[æae]g.*type.*kode/i, /anlaegstype.*kode/i, /teknisk.*anlaeg.*kode/i]);
-  const anlTypeTekst = pickFirst(t, [/teknisk.*anl[æae]g.*type.*tekst/i, /anlaegstype.*tekst/i, /anlaegstype/i]);
+  const klassifikationKode = pickFirst(t, [/forretningsomr[åaa]de/i, /klassifikation.*kode/i, /anlaegstype.*kode/i]);
+  const klassifikationTekst = pickFirst(t, [/klassifikation.*tekst/i, /teknisk.*anl[æae]g.*type.*tekst/i, /anlaegstype.*tekst/i]);
+  const klassifikationVis = klassifikationTekst || describeCodeWithFallback(BBR_TEKNISK_KLASSIFIKATION, klassifikationKode);
+
   const anvTekst = pickFirst(t, [/anvendelse.*tekst/i, /anvendelse/i]);
-  const status = pickFirst(t, [/status/i, /driftstatus/i, /aktiv/i]);
-  const etableret = pickFirst(t, [/etabler/i, /installationsdato/i, /oprettet/i]);
-  const afmeldt = pickFirst(t, [/afmeld/i, /nedlagt/i, /sl[øo]jfet/i]);
+  const statusRaw = pickFirst(t, [/status/i, /driftstatus/i, /aktiv/i]);
+  const statusVis = describeCodeWithFallback(BBR_TEKNISK_STATUS, statusRaw) || formatMaybe(statusRaw);
+
+  const etableretRaw = pickFirst(t, [/etablerings[åa]r/i, /etabler/i, /installationsdato/i, /oprettet/i]);
+  const etableretVis = formatDateDa(etableretRaw);
+
+  const afmeldtRaw = pickFirst(t, [/afmeld/i, /nedlagt/i, /sl[øo]jfet/i]);
+  const afmeldtVis = formatDateDa(afmeldtRaw) || formatMaybe(afmeldtRaw);
+
   const nedgravet = pickFirst(t, [/nedgrav/i]);
   const afblaendet = pickFirst(t, [/afbl[æae]nd/i]);
-  const volumen = pickFirst(t, [/volumen/i, /liter/i, /indhold/i, /kapacitet/i]);
+
+  const volumenRaw = pickFirst(t, [/volumen/i, /liter/i, /kapacitet/i]);
+  const stoerrelseRaw = pickFirst(t, [/st[øo]rrelsesklasse/i, /stoerrelsesklasse/i, /klasse/i]);
+  const stoerrelseVis = describeCodeWithFallback(BBR_TEKNISK_STOERRELSESKLASSE, stoerrelseRaw) || formatMaybe(stoerrelseRaw);
+
+  const indholdRaw = pickFirst(t, [/indhold/i, /produkt/i, /medium/i]);
+  const indholdVis = describeCodeWithFallback(BBR_TEKNISK_INDHOLD, indholdRaw) || formatMaybe(indholdRaw);
+
+  const placeringSoeRaw = pickFirst(t, [/s[øo]territorie/i, /soterritorie/i]);
+  const placeringSoeBool = formatBooleanDa(placeringSoeRaw);
+  const placeringSoeVis = placeringSoeBool === "Ja"
+    ? "På søterritorie"
+    : (placeringSoeBool === "Nej" ? "Ikke på søterritorie" : formatMaybe(placeringSoeRaw));
+
   const materiale = pickFirst(t, [/materiale/i]);
-  const opdateret = pickFirst(t, [/opdateringstid/i, /revisionsdato/i]);
+  const revisionRaw = pickFirst(t, [/revisionsdato/i]);
+  const revisionVis = formatDateDa(revisionRaw);
+  const opdateret = formatDateDa(pickFirst(t, [/opdateringstid/i]));
 
   const headerParts = [];
-  if (anlTypeTekst) {
-    headerParts.push(anlTypeTekst);
-  } else if (anlTypeKode != null) {
-    headerParts.push(`Typekode ${anlTypeKode}`);
-  }
-  if (anvTekst && (!anlTypeTekst || anvTekst !== anlTypeTekst)) {
-    headerParts.push(anvTekst);
-  }
+  if (klassifikationVis) headerParts.push(klassifikationVis);
+  if (anvTekst && (!klassifikationVis || anvTekst !== klassifikationVis)) headerParts.push(anvTekst);
 
-  const pairs = [
-    { label: "Type", value: anlTypeTekst || (anlTypeKode != null ? `Kode ${anlTypeKode}` : null) },
+ const pairs = [
+    { label: "Klassifikation", value: klassifikationVis },
     { label: "Anvendelse", value: anvTekst },
-    { label: "Status", value: status },
+    { label: "Status", value: statusVis },
+    { label: "Etableringsår", value: etableretVis },
+    { label: "Størrelsesklasse", value: stoerrelseVis },
+    { label: "Volumen", value: formatMaybe(volumenRaw) },
+    { label: "Indhold", value: indholdVis },
+    { label: "Placering på søterritorie", value: placeringSoeVis },
     { label: "Nedgravet", value: formatBooleanDa(nedgravet) || formatMaybe(nedgravet) },
     { label: "Afblændet", value: formatBooleanDa(afblaendet) || formatMaybe(afblaendet) },
-    { label: "Volumen", value: formatMaybe(volumen) },
     { label: "Materiale", value: formatMaybe(materiale) },
-    { label: "Etableret", value: formatMaybe(etableret) },
-    { label: "Afmeldt/Nedlagt", value: formatMaybe(afmeldt) },
-    { label: "Data opdateret", value: formatMaybe(opdateret) }
+    { label: "Revisionsdato", value: revisionVis },
+    { label: "Afmeldt/Nedlagt", value: afmeldtVis },
+    { label: "Data opdateret", value: opdateret }
   ];
 
   return {
