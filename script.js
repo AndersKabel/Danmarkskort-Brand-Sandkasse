@@ -2295,10 +2295,21 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
   bbrBox.style.display = "block";
 
   fetchBBRData(bbrId, bfeNumber)
-    .then(async data => {
-      // ----- TEKNISKE ANLÆG -----
-      // VIGTIGT: tekniske anlæg hentes på BFE-nummer.
-      const bfeListForTekniske = collectBfeNumbersFromBuildings(data, bfeNumber);
+  .then(async data => {
+
+    // NYT: udled BFE via grund-id'er, hvis bygningerne har "grund"
+    const grundIds = collectGrundIdsFromBuildings(Array.isArray(data) ? data : []);
+    const bfeFromGrund = await fetchBfeNumbersViaGrundIds(grundIds);
+
+    // Saml alle BFE-kilder vi har:
+    const bfeCombined = Array.from(new Set([
+      ...(collectBfeNumbersFromBuildings(data, bfeNumber) || []),
+      ...(bfeFromGrund || [])
+    ]));
+
+    // ----- TEKNISKE ANLÆG -----
+    // Brug bfeCombined i stedet for kun collectBfeNumbersFromBuildings(...)
+    const bfeListForTekniske = bfeCombined;
       console.log("bfeNumber (fallback):", bfeNumber);
       console.log("bfeListForTekniske:", bfeListForTekniske);
       
