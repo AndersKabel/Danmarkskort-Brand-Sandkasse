@@ -1719,6 +1719,27 @@ async function fetchBBRTekniskeAnlaeg(adresseId, bfeNumber) {
   }
 }
 
+function dedupeById(arr) {
+  const seen = new Set();
+  return (arr || []).filter(item => {
+    // Find en unik nøgle (id_lokalId eller id) på bygningen
+    let id = null;
+    if (item && item.bygning) {
+      id = item.bygning.id_lokalId || item.bygning.id;
+    }
+    if (!id) {
+      // Hvis ingen id, behold elementet
+      return true;
+    }
+    if (seen.has(id)) {
+      // Dublet fundet → fjern
+      return false;
+    }
+    seen.add(id);
+    return true;
+  });
+}
+
 // Hjælpefunktion: find første felt i et objekt (og evt. underobjekter), hvor nøglen matcher et regex.
 function findFirstMatchingField(obj, regex) {
   if (!obj || typeof obj !== "object") return null;
