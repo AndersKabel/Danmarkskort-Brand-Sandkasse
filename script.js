@@ -1571,6 +1571,66 @@ async function fetchBBRData(bbrId, bfeNumber) {
     return [];
   }
 }
+// DOBBELT DAR_BFE-kald:
+// - husnummerTilBygningBfe (for almindeligt hus / adgangsadresse)
+// - adresseTilEnhedBfe (for etageejendom / enhedsadresse)
+// Begge kald sendes hver gang. Det kald der giver data bruges; det andet ignoreres.
+async function fetchBfeNumbersViaDarBfeDual(husnummerId, adresseId) {
+  const husId = (husnummerId != null && String(husnummerId).trim() !== "")
+    ? String(husnummerId).trim()
+    : null;
+
+  const adrId = (adresseId != null && String(adresseId).trim() !== "")
+    ? String(adresseId).trim()
+    : null;
+
+  // Vi returnerer en liste af BFE-numre (strings), unikke.
+  const out = new Set();
+
+  // Byg begge URL'er (hvis id mangler, kalder vi stadig endpointet med tom id => det vil fejle,
+  // men kravet er at "begge kald skal sendes hver gang". Vi håndterer fejl og ignorerer det.
+  const urlHus = `${BBR_PROXY}/husnummerTilBygningBfe?husnummerId=${encodeURIComponent(husId || "")}`;
+  const urlAdr = `${BBR_PROXY}/adresseTilEnhedBfe?adresseId=${encodeURIComponent(adrId || "")}`;
+
+  // Send begge kald hver gang (parallel)
+  const [r1, r2] = await Promise.allSettled([
+    fetch(urlHus, { method: "GET" }),
+    fetch(urlAdr, { method: "GET" })
+  ]);
+
+  async function collectFromResponse(settledResp) {
+    if (!settledResp || settledResp.status !== "fulfilled") return;
+    const resp = settledResp.value;
+    if (!resp || !resp.ok) return;
+
+    let data;
+    try {
+      data = await resp.json();
+    } catch (e) {
+      return;
+    }
+
+    // DAR_BFE payload kan variere: vi leder efter felter der matcher /bfe.*nummer/i
+    const pushBfeFromObj = (obj) => {
+      const v = findFirstMatchingField(obj, /bfe.*nummer/i);
+      if (v != null && String(v).trim() !== "") {
+        out.add(String(v).trim());
+      }
+    };
+
+    if (Array.isArray(data)) {
+      data.forEach(pushBfeFromObj);
+    } else if (data && typeof data === "object") {
+      pushBfeFromObj(data);
+    }
+  }
+
+  await collectFromResponse(r1);
+  await collectFromResponse(r2);
+
+  return Array.from(out);
+}
+
 async function fetchBBRTekniskeAnlaeg(adresseId, bfeNumber) {
   try {
     if (!adresseId && !bfeNumber) {
