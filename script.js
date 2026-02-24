@@ -2402,6 +2402,12 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
       // men vi HAR enheder, så prøv at hente bygninger via BFE på enhederne.
       let buildingsOnly = Array.isArray(data) ? data : [];
       if (buildingsOnly.length === 0 && Array.isArray(enhedOnly) && enhedOnly.length > 0) {
+        // NYT: fjern dubletter i buildingsOnly baseret på id_lokalId
+buildingsOnly = Array.from(new Map(buildingsOnly.map(b => {
+  const obj = (b && b.bygning) ? b.bygning : b;
+  const id = obj && (obj.id_lokalId || obj.id) ? (obj.id_lokalId || obj.id) : JSON.stringify(obj);
+  return [id, b];
+})).values());
         console.log("Fallback: prøver bygninger via BFE fra enheder", enhedOnly);
         
         const bfeFromEnhederSet = new Set();
