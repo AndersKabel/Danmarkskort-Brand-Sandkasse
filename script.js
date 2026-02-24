@@ -2422,6 +2422,35 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
 
       const tekniskeOnly = Array.isArray(tekniske) ? tekniske : [];
 
+      // ----- TEKNISKE ANLÆG: tilføj markører på kortet (T1, T2, ...) -----
+if (tekniskeOnly.length > 0) {
+  tekniskeOnly.forEach((t, tIdx) => {
+    const ll = getTekniskAnlaegLatLon(t, fallbackLat, fallbackLon);
+    if (!ll) return;
+
+    const tLat = ll[0];
+    const tLon = ll[1];
+
+    const labelText = `T${tIdx + 1}`;
+
+    const iconHtml = `<div class="bbr-tech-icon">${labelText}</div>`;
+    const techIcon = L.divIcon({
+      html: iconHtml,
+      className: "bbr-tech-icon-wrapper",
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
+
+    const m = L.marker([tLat, tLon], { icon: techIcon });
+
+    // Valgfri popup med “rå” data (kort)
+    m.bindPopup(`<strong>Teknisk anlæg ${tIdx + 1}</strong><br><pre style="max-width:320px; max-height:180px; overflow:auto;">${escapeHtml(JSON.stringify(t, null, 2))}</pre>`);
+
+    // Genbrug samme layer som bygninger, så din eksisterende "addTo(map)" logik virker
+    m.addTo(bbrBuildingsLayer);
+  });
+}
+      
       // Hvis der slet ingen BBR‑objekter er (hverken bygninger,
       // tekniske anlæg, grund, enheder eller ejendomsrelationer)
       const hasAnyBBR =
