@@ -2078,6 +2078,13 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
   }
   const bbrBox = document.getElementById("bbrInfoBox");
   if (!bbrBox) return;
+    // Gem seneste kendte id'er til dobbelt DAR_BFE-kald (bruges i fetchBBRData)
+  if (bbrId != null && String(bbrId).trim() !== "") {
+    lastSelectedHusnummerIdForBBR = String(bbrId).trim();
+  }
+  if (adresseId != null && String(adresseId).trim() !== "") {
+    lastSelectedAdresseIdForBBR = String(adresseId).trim();
+  }
 
   // Ryd eksisterende BBR-bygning-markører
   if (bbrBuildingsLayer) {
