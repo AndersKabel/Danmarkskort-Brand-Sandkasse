@@ -1768,6 +1768,67 @@ function collectBfeNumbersFromBuildings(buildings, fallbackBfeNumber) {
   return Array.from(result);
 }
 
+// NY: saml grund-id'er fra bygninger (så vi kan slå BFE op via /grund)
+function collectGrundIdsFromBuildings(buildings) {
+  const result = new Set();
+  if (!Array.isArray(buildings)) return [];
+
+  buildings.forEach(b => {
+    const building = (b && b.bygning) ? b.bygning : b;
+    if (!building || typeof building !== "object") return;
+
+    // BBRPublic har typisk "grund": "<uuid>"
+    const grundId = building.grund || building["grund"] || null;
+    if (grundId != null && String(grundId).trim() !== "") {
+      result.add(String(grundId).trim());
+    }
+  });
+
+  return Array.from(result);
+}
+
+// NY: slå grund op og udled BFE-numre fra grund-svar
+async function fetchBfeNumbersViaGrundIds(grundIds) {
+  const out = new Set();
+  const ids = Array.isArray(grundIds) ? grundIds : [grundIds];
+
+  for (const gid of ids) {
+    const grundId = gid != null ? String(gid).trim() : "";
+    if (!grundId) continue;
+
+    // 1) prøv mest sandsynlige parameternavne
+    const tries = [
+      { id: grundId },
+      { id_lokalId: grundId },
+      { idLokalId: grundId },
+      { grund: grundId }
+    ];
+
+    for (const params of tries) {
+      const data = await fetchBBRGrund(params);
+
+      const list = Array.isArray(data) ? data : (data ? [data] : []);
+      for (const g of list) {
+        // findFirstMatchingField leder rekursivt efter fx "bestemtFastEjendomBFENr" / "bfeNummer" osv.
+        const bfeVal =
+          g?.bestemtFastEjendomBFENr ||
+          findFirstMatchingField(g, /bestemt.*bfe.*nr/i) ||
+          findFirstMatchingField(g, /bfe.*nummer/i) ||
+          findFirstMatchingField(g, /bfenr/i);
+
+        if (bfeVal != null && String(bfeVal).trim() !== "") {
+          out.add(String(bfeVal).trim());
+        }
+      }
+
+      // hvis vi allerede fandt BFE på denne grund, behøver vi ikke prøve flere param-variationer
+      if (out.size > 0) break;
+    }
+  }
+
+  return Array.from(out);
+}
+
 // Hjælpefunktion: saml BFE-numre fra enheder
 function collectBfeNumbersFromEnheder(enhedList) {
   const result = new Set();
