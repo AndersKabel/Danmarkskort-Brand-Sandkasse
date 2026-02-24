@@ -1876,6 +1876,63 @@ function collectBfeNumbersFromEnheder(enhedList) {
   return Array.from(result);
 }
 
+function collectBfeCandidatesFromAnyValue(value, outSet) {
+  if (value == null) return;
+
+  if (typeof value === "number") {
+    if (Number.isFinite(value)) {
+      const s = String(Math.trunc(value));
+      if (s.length >= 5) outSet.add(s);
+    }
+    return;
+  }
+
+  if (typeof value === "string") {
+    const matches = value.match(/\b\d{5,12}\b/g);
+    if (matches) {
+      matches.forEach(m => outSet.add(m));
+    }
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach(v => collectBfeCandidatesFromAnyValue(v, outSet));
+    return;
+  }
+
+  if (typeof value === "object") {
+    Object.keys(value).forEach(k => {
+      const v = value[k];
+      if (/(bfe|bestemt.*fast.*ejendom|samlet.*fast.*ejendom|moderejendom|moder.*ejendom)/i.test(k)) {
+        collectBfeCandidatesFromAnyValue(v, outSet);
+      }
+      if (v && typeof v === "object") {
+        collectBfeCandidatesFromAnyValue(v, outSet);
+      }
+    });
+  }
+}
+
+function collectRelatedBfeNumbersFromEjendomsrelation(ejendomsrelationList, excludeBfes = []) {
+  const out = new Set();
+  const exclude = new Set((Array.isArray(excludeBfes) ? excludeBfes : [excludeBfes]).map(v => String(v).trim()));
+  const list = Array.isArray(ejendomsrelationList) ? ejendomsrelationList : [];
+
+  list.forEach(rel => {
+    collectBfeCandidatesFromAnyValue(rel, out);
+  });
+
+  const cleaned = [];
+  out.forEach(v => {
+    const s = String(v).trim();
+    if (!s) return;
+    if (exclude.has(s)) return;
+    cleaned.push(s);
+  });
+
+  return cleaned;
+}
+
 // Hjælpefunktion: hent Ejendomsbeliggenhed-data for et eller flere BFE-numre via proxien.
 async function fetchEjendomsbeliggenhedForBFE(bfeNumbers) {
   try {
@@ -2467,6 +2524,27 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
           ejendomsrelationOnly.push(tmpEjd);
         }
       }
+
+    let buildingsOnly = Array.isArray(data) ? data : [];
+
+      // Ved fx ejerlejligheder kan bygningsdata ligge på en "moderejendom" BFE.
+      // Udled derfor relaterede BFE-numre fra ejendomsrelationer og hent bygninger derfra.
+      const relatedBfeFromEjendomsrelation = collectRelatedBfeNumbersFromEjendomsrelation(ejendomsrelationOnly, bfeCombined);
+      if (relatedBfeFromEjendomsrelation.length > 0) {
+        console.log("Relaterede BFE-numre fra ejendomsrelation:", relatedBfeFromEjendomsrelation);
+        for (let i = 0; i < relatedBfeFromEjendomsrelation.length; i++) {
+          const relBfe = relatedBfeFromEjendomsrelation[i];
+          try {
+            const relatedBuildings = await fetchBBRData(null, relBfe);
+            if (Array.isArray(relatedBuildings) && relatedBuildings.length > 0) {
+              buildingsOnly = buildingsOnly.concat(relatedBuildings);
+            }
+          } catch (relErr) {
+            console.warn("Bygningsopslag via relateret BFE fejlede for", relBfe, relErr);
+          }
+        }
+      }
+
       // Enhed: brug adresseIdentificerer (adresse-id) når det findes.
       // Det virker både for almindelige huse og for adresser med etage/dør.
       let enhedOnly = [];
@@ -2492,7 +2570,6 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
 // --- EKSTRA FALLBACK: hent bygninger via BFE fra enheder ---
       // Hvis der (endnu) ikke er fundet bygninger via husnummer/BFE,
       // men vi HAR enheder, så prøv at hente bygninger via BFE på enhederne.
-      let buildingsOnly = Array.isArray(data) ? data : [];
       if (buildingsOnly.length === 0 && Array.isArray(enhedOnly) && enhedOnly.length > 0) {
         // NYT: fjern dubletter i buildingsOnly baseret på id_lokalId
 buildingsOnly = Array.from(new Map(buildingsOnly.map(b => {
