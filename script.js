@@ -2341,6 +2341,13 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
     }
   }
 
+    if (bbrFootprintsLayer) {
+    bbrFootprintsLayer.clearLayers();
+    if (map.hasLayer(bbrFootprintsLayer)) {
+      map.removeLayer(bbrFootprintsLayer);
+    }
+  }
+  
   // Vis loading og gør boksen synlig
   bbrBox.innerHTML = "Henter BBR-data...";
   bbrBox.classList.remove("hidden");
