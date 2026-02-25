@@ -2278,12 +2278,50 @@ function asCodeString(value) {
   return s || null;
 }
 
+function collectPrimitiveValuesByKeyRegex(obj, regex, out = []) {
+  if (!obj || typeof obj !== "object") return out;
+
+  if (Array.isArray(obj)) {
+    obj.forEach(v => collectPrimitiveValuesByKeyRegex(v, regex, out));
+    return out;
+  }
+
+  Object.keys(obj).forEach(key => {
+    const value = obj[key];
+    if (regex.test(key) && value != null) {
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        out.push(value);
+      }
+    }
+    if (value && typeof value === "object") {
+      collectPrimitiveValuesByKeyRegex(value, regex, out);
+    }
+  });
+
+  return out;
+}
+
+function firstNonEmpty(values) {
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v == null) continue;
+    const s = String(v).trim();
+    if (s !== "") return v;
+  }
+  return null;
+}
+
 const BBR_TEKNISK_KLASSIFIKATION = {
   "54.15.05.05": "Tank",
   "TANK": "Tank"
 };
 
 const BBR_TEKNISK_STATUS = {
+  "1": "I drift",
+  "2": "Midlertidigt ude af drift",
+  "3": "Nedlagt",
+  "4": "Afproppet",
+  "5": "Saneret",
   "6": "Afblændet"
 };
 
@@ -2335,26 +2373,41 @@ function summarizeTekniskAnlaeg(t) {
   const afmeldtRaw = pickFirst(t, [/afmeld/i, /nedlagt/i, /sl[øo]jfet/i]);
   const afmeldtVis = formatDateDa(afmeldtRaw) || formatMaybe(afmeldtRaw);
 
-  const nedgravet = pickFirst(t, [/nedgrav/i]);
-  const afblaendet = pickFirst(t, [/afbl[æae]nd/i]);
+  const nedgravet = firstNonEmpty(collectPrimitiveValuesByKeyRegex(t, /nedgrav/i));
+  let afblaendet = firstNonEmpty(collectPrimitiveValuesByKeyRegex(t, /afbl[æae]nd/i));
 
-  const volumenRaw = pickFirst(t, [/volumen/i, /liter/i, /kapacitet/i]);
-  const stoerrelseRaw = pickFirst(t, [/st[øo]rrelsesklasse/i, /stoerrelsesklasse/i, /klasse/i]);
+  const volumenCandidates = collectPrimitiveValuesByKeyRegex(t, /volumen|tank.*st[øo]rrelse|indholdsmaengde|indholdsm[æae]ngde|liter/i);
+  let volumenRaw = null;
+  for (let i = 0; i < volumenCandidates.length; i++) {
+    const c = String(volumenCandidates[i]).trim();
+    if (!c) continue;
+    // undgå at bruge størrelsesklasse-koder som volumen
+    if (/^\d{1,2}$/.test(c)) continue;
+    volumenRaw = c;
+    break;
+  }
+
+  const stoerrelseRaw = firstNonEmpty(collectPrimitiveValuesByKeyRegex(t, /st[øo]rrelsesklasse|stoerrelsesklasse|tank.*klasse/i));
   const stoerrelseVis = describeCodeWithFallback(BBR_TEKNISK_STOERRELSESKLASSE, stoerrelseRaw) || formatMaybe(stoerrelseRaw);
 
-  const indholdRaw = pickFirst(t, [/indhold/i, /produkt/i, /medium/i]);
+  const indholdRaw = firstNonEmpty(collectPrimitiveValuesByKeyRegex(t, /indhold.*kode|teknisk.*anlaeg.*indhold|produkt|medium/i));
   const indholdVis = describeCodeWithFallback(BBR_TEKNISK_INDHOLD, indholdRaw) || formatMaybe(indholdRaw);
 
-  const placeringSoeRaw = pickFirst(t, [/s[øo]territorie/i, /soterritorie/i]);
+ const placeringSoeRaw = firstNonEmpty(collectPrimitiveValuesByKeyRegex(t, /s[øo]territorie|soterritorie/i));
   const placeringSoeBool = formatBooleanDa(placeringSoeRaw);
   const placeringSoeVis = placeringSoeBool === "Ja"
     ? "På søterritorie"
     : (placeringSoeBool === "Nej" ? "Ikke på søterritorie" : formatMaybe(placeringSoeRaw));
 
-  const materiale = pickFirst(t, [/materiale/i]);
-  const revisionRaw = pickFirst(t, [/revisionsdato/i]);
+  const materiale = firstNonEmpty(collectPrimitiveValuesByKeyRegex(t, /materiale/i));
+  const revisionRaw = firstNonEmpty(collectPrimitiveValuesByKeyRegex(t, /revisionsdato/i));
   const revisionVis = formatDateDa(revisionRaw);
-  const opdateret = formatDateDa(pickFirst(t, [/opdateringstid/i]));
+  const opdateret = formatDateDa(firstNonEmpty(collectPrimitiveValuesByKeyRegex(t, /opdateringstid/i)));
+
+  // Hvis status = afblændet og vi ikke har et specifikt felt, vis alligevel Ja.
+  if (!afblaendet && asCodeString(statusRaw) === "6") {
+    afblaendet = true;
+  }
 
   const headerParts = [];
   if (klassifikationVis) headerParts.push(klassifikationVis);
