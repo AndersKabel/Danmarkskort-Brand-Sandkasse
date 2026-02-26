@@ -537,16 +537,16 @@
 }
 
 .bbr-building-icon {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: rgba(0, 128, 0, 0.85);
+  background: rgba(0, 128, 0, 0.88);
   color: #fff;
-  font-size: 13px;
   font-weight: bold;
-  line-height: 24px;
   text-align: center;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+  border: 2px solid #fff;
+  position: relative;
 }
 
 /* ============================
@@ -558,17 +558,16 @@
 }
 
 .bbr-tech-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: rgba(211, 47, 47, 0.90); /* rød */
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(220, 0, 0, 0.9);
   color: #fff;
-  font-size: 12px;
   font-weight: bold;
-  line-height: 24px;
   text-align: center;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 4px rgba(0,0,0,0.6);
   border: 2px solid #fff;
+  position: relative;
 }
 
 /* ============================
@@ -581,16 +580,16 @@
 }
 
 .bbr-tech-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
   background: rgba(220, 0, 0, 0.9);
   color: #fff;
-  font-size: 12px;
   font-weight: bold;
-  line-height: 24px;
   text-align: center;
   box-shadow: 0 0 4px rgba(0,0,0,0.6);
+  border: 2px solid #fff;
+  position: relative; 
 }
 
 .compact-action-btn {
@@ -598,4 +597,22 @@
   height: 40px;
   font-size: 14px;
   cursor: pointer;
+}
+
+
+.bbr-icon-symbol {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.bbr-icon-label {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
 }
