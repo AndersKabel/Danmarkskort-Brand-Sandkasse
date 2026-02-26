@@ -1303,11 +1303,11 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
       if (komResp.ok) {
         const komData = await komResp.json();
         const kommunenavn = komData.navn || "";
-        if (kommunenavn && kommuneInfo[kommunenavn]) {
+        if (kommunenavn) {
           const info = kommuneInfo[kommunenavn];
-          const link = info.gemLink;
+          const link = info && info.gemLink ? info.gemLink : null;
           if (link) {
-            extraInfoEl.innerHTML += `<br><span style="font-size:16px;">Kommune: <a href="${link}" target="_blank">${kommunenavn}</a></span>`;
+            extraInfoEl.innerHTML += `<br><span style="font-size:16px;">Kommune: <a href="${link}" target="_blank" rel="noopener noreferrer">${kommunenavn}</a></span>`;
           } else {
             extraInfoEl.innerHTML += `<br><span style="font-size:16px;">Kommune: ${kommunenavn}</span>`;
           }
@@ -1319,12 +1319,27 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
   }
 
   // ----- Politikreds-info (hvis tilgængelig) -----
-  const politikredsNavn = data.politikredsnavn
+  let politikredsNavn = data.politikredsnavn
     ?? data.adgangsadresse?.politikredsnavn
     ?? null;
-  const politikredsKode = data.politikredskode
+  let politikredsKode = data.politikredskode
     ?? data.adgangsadresse?.politikredskode
     ?? null;
+  
+  // Fallback: nogle adresseopslag mangler politikredsfelter direkte.
+  if (!politikredsNavn && !politikredsKode && typeof lat === "number" && typeof lon === "number") {
+    try {
+      const revResp = await fetch(`https://api.dataforsyningen.dk/adgangsadresser/reverse?x=${lon}&y=${lat}&struktur=flad`);
+      if (revResp.ok) {
+        const revData = await revResp.json();
+        politikredsNavn = revData.politikredsnavn ?? revData.adgangsadresse?.politikredsnavn ?? politikredsNavn;
+        politikredsKode = revData.politikredskode ?? revData.adgangsadresse?.politikredskode ?? politikredsKode;
+      }
+    } catch (e) {
+      console.warn("Kunne ikke hente politikreds via reverse-fallback:", e);
+    }
+  }
+  
   if (politikredsNavn || politikredsKode) {
     const polititekst = politikredsKode
       ? `${politikredsNavn || ""} (${politikredsKode})`
