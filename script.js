@@ -1891,6 +1891,32 @@ function collectBfeNumbersFromEnheder(enhedList) {
   return Array.from(result);
 }
 
+function collectBfeNumbersFromEjendomsbeliggenhedList(list) {
+  const out = new Set();
+  const arr = Array.isArray(list) ? list : [list];
+
+  arr.forEach(item => {
+    if (!item || typeof item !== "object") return;
+    const obj = item.properties && typeof item.properties === "object" ? item.properties : item;
+    const candidates = [
+      obj.bestemtFastEjendomBFENr,
+      obj.samletFastEjendomBFENr,
+      obj.bfenummer,
+      findFirstMatchingField(obj, /bestemt.*bfe.*nr|bestemt.*bfe.*nummer/i),
+      findFirstMatchingField(obj, /samlet.*fast.*ejendom.*bfe/i),
+      findFirstMatchingField(obj, /bfe.*nummer|bfenr/i)
+    ];
+
+    candidates.forEach(v => {
+      if (v == null) return;
+      const sv = String(v).trim();
+      if (sv) out.add(sv);
+    });
+  });
+
+  return Array.from(out);
+}
+
 function collectBfeCandidatesFromAnyValue(value, outSet) {
   if (value == null) return;
 
@@ -2690,11 +2716,24 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
     const bfeFromGrund = await fetchBfeNumbersViaGrundIds(grundIds);
 
     // Saml alle BFE-kilder vi har:
-    const bfeCombined = Array.from(new Set([
+    let bfeCombined = Array.from(new Set([
       ...(collectBfeNumbersFromBuildings(data, bfeNumber) || []),
       ...(bfeFromGrund || [])
     ]));
 
+    // Udvid med BFE fra Ejendomsbeliggenhed tidligt (vigtigt ved moderejendom/ejerlejlighed)
+    try {
+      if (bfeCombined.length > 0) {
+        const ejdPre = await fetchEjendomsbeliggenhedForBFE(bfeCombined);
+        const bfeFromEjd = collectBfeNumbersFromEjendomsbeliggenhedList(ejdPre);
+        if (bfeFromEjd.length > 0) {
+          bfeCombined = Array.from(new Set([...bfeCombined, ...bfeFromEjd]));
+        }
+      }
+    } catch (e) {
+      console.warn("Kunne ikke udvide BFE via tidlig Ejendomsbeliggenhed:", e);
+    }
+    
     // ----- TEKNISKE ANLÆG -----
     // Brug bfeCombined i stedet for kun collectBfeNumbersFromBuildings(...)
     const bfeListForTekniske = bfeCombined;
@@ -2930,7 +2969,8 @@ if (tekniskeOnly.length > 0) {
 
     const labelText = `T${tIdx + 1}`;
 
-    const iconHtml = `<div class="bbr-tech-icon">${labelText}</div>`;
+    const techSymbol = /tank|olie|mineralsk/i.test(JSON.stringify(t || {})) ? "⛽" : "⚙";
+    const iconHtml = `<div class="bbr-tech-icon"><span class="bbr-icon-symbol">${techSymbol}</span><span class="bbr-icon-label">${labelText}</span></div>`;
     const techIcon = L.divIcon({
       html: iconHtml,
       className: "bbr-tech-icon-wrapper",
@@ -3153,7 +3193,7 @@ if (buildingsOnly && buildingsOnly.length > 0) {
 
           const labelText = String(idx + 1);
 
-          const iconHtml = `<div class="bbr-building-icon">${labelText}</div>`;
+          const iconHtml = `<div class="bbr-building-icon"><span class="bbr-icon-symbol">⌂</span><span class="bbr-icon-label">${labelText}</span></div>`;
           const buildingIcon = L.divIcon({
             html: iconHtml,
             className: "bbr-building-icon-wrapper",
