@@ -2537,6 +2537,122 @@ return [
 ];
 }
 
+function toFiniteNumber(value) {
+if (value === null || value === undefined || value === "") return null;
+const n = Number(value);
+return Number.isFinite(n) ? n : null;
+}
+
+function sumNumericValuesFromList(list, regexes) {
+if (!Array.isArray(list) || list.length === 0) return null;
+let sum = 0;
+let hasValue = false;
+
+for (const item of list) {
+const raw = pickFirst(item, regexes);
+const n = toFiniteNumber(raw);
+if (n != null) {
+sum += n;
+hasValue = true;
+}
+}
+
+return hasValue ? sum : null;
+}
+
+function collectBfeFromObjectList(list, regexes) {
+const out = new Set();
+if (!Array.isArray(list)) return out;
+
+list.forEach(obj => {
+if (!obj || typeof obj !== "object") return;
+const val = pickFirst(obj, regexes);
+if (val != null && String(val).trim() !== "") {
+out.add(String(val).trim());
+}
+});
+return out;
+}
+
+function buildBrandOverblikData(buildingsOnly, enhedOnly, grundOnly, ejendomsrelationOnly, bfeNumber) {
+const normalizedBuildings = Array.isArray(buildingsOnly)
+? buildingsOnly.map(b => (b && b.bygning ? b.bygning : b)).filter(Boolean)
+: [];
+
+const samletBygningsareal = sumNumericValuesFromList(normalizedBuildings, [
+/byg038SamletBygningsareal/i,
+/samlet.*bygningsareal/i,
+/bygningsareal/i
+]);
+
+const samletEnhedsareal = sumNumericValuesFromList(enhedOnly, [
+/enh023ArealTilBeboelse/i,
+/enh026EnhedensSamledeAreal/i,
+/enhed.*samlede.*areal/i,
+/bolig.*areal/i,
+/areal/i
+]);
+
+const samletGrundareal = sumNumericValuesFromList(grundOnly, [
+/gru009Vandforsyningsareal/i,
+/grund.*areal/i,
+/areal/i
+]);
+
+const enhedsBfeSet = collectBfeFromObjectList(enhedOnly, [/bfe.*nummer/i, /bfenr/i]);
+const moderEjendomBfeSet = new Set(collectBfeNumbersFromBuildings(normalizedBuildings, bfeNumber));
+
+const relationBfeSet = collectBfeFromObjectList(ejendomsrelationOnly, [
+/bestemt.*fast.*ejendom.*bfe/i,
+/samlet.*fast.*ejendom.*bfe/i,
+/moderejendom.*bfe/i,
+/moder.*ejendom.*bfe/i,
+/bfe.*nummer/i
+]);
+relationBfeSet.forEach(v => moderEjendomBfeSet.add(v));
+
+const andelEnhedAfBygning =
+(samletBygningsareal != null && samletBygningsareal > 0 && samletEnhedsareal != null)
+? (samletEnhedsareal / samletBygningsareal) * 100
+: null;
+
+return {
+antalBygninger: normalizedBuildings.length,
+antalEnheder: Array.isArray(enhedOnly) ? enhedOnly.length : 0,
+antalEjendomsrelationer: Array.isArray(ejendomsrelationOnly) ? ejendomsrelationOnly.length : 0,
+samletBygningsareal,
+samletEnhedsareal,
+samletGrundareal,
+andelEnhedAfBygning,
+enhedsBfe: Array.from(enhedsBfeSet),
+moderEjendomBfe: Array.from(moderEjendomBfeSet)
+};
+}
+
+function renderBrandOverblikHtml(overview) {
+if (!overview) return "";
+
+const relationText =
+overview.enhedsBfe.length > 0 && overview.moderEjendomBfe.length > 0
+? "Lejlighed/enhed og moderejendom er fundet via BFE-relationer."
+: "BFE-relation delvist fundet – vis rå BBR-data for at verificere koblingen.";
+
+const pairs = [
+{ label: "Lejligheds-BFE (enhed)", value: overview.enhedsBfe.length ? overview.enhedsBfe.join(", ") : null },
+{ label: "Moderejendom-BFE", value: overview.moderEjendomBfe.length ? overview.moderEjendomBfe.join(", ") : null },
+{ label: "Antal bygninger", value: overview.antalBygninger },
+{ label: "Antal enheder", value: overview.antalEnheder },
+{ label: "Antal ejendomsrelationer", value: overview.antalEjendomsrelationer },
+{ label: "Samlet bygningsareal", value: overview.samletBygningsareal != null ? ${overview.samletBygningsareal} m² : null },
+{ label: "Samlet enhedsareal", value: overview.samletEnhedsareal != null ? ${overview.samletEnhedsareal} m² : null },
+{ label: "Samlet grundareal", value: overview.samletGrundareal != null ? ${overview.samletGrundareal} m² : null },
+{ label: "Enhedsandel af bygningsareal", value: overview.andelEnhedAfBygning != null ? ${overview.andelEnhedAfBygning.toFixed(1)} % : null },
+{ label: "Koblingsstatus", value: relationText }
+];
+
+return `
+
+<details open> <summary><strong>Brand-overblik (lejlighed + moderejendom)</strong></summary> ${renderKeyValueList(pairs)} </details>`; }
 // --- Hjælper: parse "POINT(x y)" fra BBR-felter (typisk UTM/EPSG:25832) ---
 function parseWKTPoint(wkt) {
   if (!wkt || typeof wkt !== "string") return null;
