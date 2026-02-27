@@ -2638,16 +2638,18 @@ overview.enhedsBfe.length > 0 && overview.moderEjendomBfe.length > 0
 : "BFE-relation delvist fundet – vis rå BBR-data for at verificere koblingen.";
 
 const pairs = [
-{ label: "Lejligheds-BFE (enhed)", value: overview.enhedsBfe.length ? overview.enhedsBfe.join(", ") : null },
-{ label: "Moderejendom-BFE", value: overview.moderEjendomBfe.length ? overview.moderEjendomBfe.join(", ") : null },
-{ label: "Antal bygninger", value: overview.antalBygninger },
-{ label: "Antal enheder", value: overview.antalEnheder },
-{ label: "Antal ejendomsrelationer", value: overview.antalEjendomsrelationer },
-{ label: "Samlet bygningsareal", value: overview.samletBygningsareal != null ? ${overview.samletBygningsareal} m² : null },
-{ label: "Samlet enhedsareal", value: overview.samletEnhedsareal != null ? ${overview.samletEnhedsareal} m² : null },
-{ label: "Samlet grundareal", value: overview.samletGrundareal != null ? ${overview.samletGrundareal} m² : null },
-{ label: "Enhedsandel af bygningsareal", value: overview.andelEnhedAfBygning != null ? ${overview.andelEnhedAfBygning.toFixed(1)} % : null },
-{ label: "Koblingsstatus", value: relationText }
+  { label: "Lejligheds-BFE (enhed)", value: overview.enhedsBfe.length ? overview.enhedsBfe.join(", ") : null },
+  { label: "Moderejendom-BFE", value: overview.moderEjendomBfe.length ? overview.moderEjendomBfe.join(", ") : null },
+  { label: "Antal bygninger", value: overview.antalBygninger },
+  { label: "Antal enheder", value: overview.antalEnheder },
+  { label: "Antal ejendomsrelationer", value: overview.antalEjendomsrelationer },
+
+  { label: "Samlet bygningsareal", value: overview.samletBygningsareal != null ? `${overview.samletBygningsareal} m²` : null },
+  { label: "Samlet enhedsareal", value: overview.samletEnhedsareal != null ? `${overview.samletEnhedsareal} m²` : null },
+  { label: "Samlet grundareal",  value: overview.samletGrundareal  != null ? `${overview.samletGrundareal} m²` : null },
+  { label: "Enhedsandel af bygningsareal", value: overview.andelEnhedAfBygning != null ? `${overview.andelEnhedAfBygning.toFixed(1)} %` : null },
+
+  { label: "Koblingsstatus", value: relationText }
 ];
 
 return `
