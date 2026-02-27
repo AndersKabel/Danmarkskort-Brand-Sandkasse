@@ -3135,7 +3135,9 @@ if (tekniskeOnly.length > 0) {
   </div>
   <div class="bbr-content">
 `;
-
+const brandOverview = buildBrandOverblikData(buildingsOnly, enhedOnly, grundOnly, ejendomsrelationOnly, bfeNumber);
+    html += renderBrandOverblikHtml(brandOverview);
+    
       // ----- BYGNINGER (som før) -----
       // NYT: tegn ejendomsfolier (parcelpolygoner) for hver grund-id
 if (buildingsOnly && buildingsOnly.length > 0) {
