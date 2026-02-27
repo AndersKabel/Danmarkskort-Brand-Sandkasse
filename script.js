@@ -2524,17 +2524,17 @@ function summarizeEnhed(e) {
 }
 
 function summarizeEjendomsrelation(er) {
-  const relId = pickFirst(er, [/ejendomsrelation.*id/i, /id/i]);
-  const bfe = pickFirst(er, [/bfe.*nummer/i, /bfenr/i]);
-  const type = pickFirst(er, [/relation.*type/i, /type/i]);
-  const status = pickFirst(er, [/status/i]);
+const relId = pickFirst(er, [/ejendomsrelation.*id/i, /id/i]);
+const bfe = pickFirst(er, [/bfe.*nummer/i, /bfenr/i]);
+const type = pickFirst(er, [/relation.*type/i, /type/i]);
+const status = pickFirst(er, [/status/i]);
 
-  return [
-    { label: "Relation-ID", value: relId },
-    { label: "BFE-nummer", value: bfe },
-    { label: "Type", value: type },
-    { label: "Status", value: status }
-  ];
+return [
+{ label: "Relation-ID", value: relId },
+{ label: "BFE-nummer", value: bfe },
+{ label: "Type", value: type },
+{ label: "Status", value: status }
+];
 }
 
 // --- Hjælper: parse "POINT(x y)" fra BBR-felter (typisk UTM/EPSG:25832) ---
